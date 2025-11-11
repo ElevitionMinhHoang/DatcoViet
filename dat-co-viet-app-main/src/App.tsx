@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
+import { CartProvider } from "@/contexts/CartContext";
 import { DebugRouter } from "@/components/DebugRouter";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -24,6 +25,7 @@ import DrinksPage from "./pages/DrinksPage";
 import OrdersPage from "./pages/OrdersPage";
 import DeliveryPage from "./pages/DeliveryPage";
 import HistoryPage from "./pages/HistoryPage";
+import SearchResultsPage from "./pages/SearchResultsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import MenuManagementPage from "./pages/admin/MenuManagementPage";
@@ -40,15 +42,16 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <ChatProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <DebugRouter />
-            <Routes>
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/auth" element={<AuthPage />} />
+      <CartProvider>
+        <ChatProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <DebugRouter />
+              <Routes>
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/auth" element={<AuthPage />} />
             <Route path="/menu" element={<ProtectedRoute><MenuPage /></ProtectedRoute>} />
             <Route path="/menu/sets/:id" element={<ProtectedRoute><SetDetailPage /></ProtectedRoute>} />
             <Route path="/menu/dishes/:id" element={<ProtectedRoute><DishDetailPage /></ProtectedRoute>} />
@@ -60,6 +63,7 @@ const App = () => (
             <Route path="/special-sets" element={<ProtectedRoute><SpecialSetsPage /></ProtectedRoute>} />
             <Route path="/individual-dishes" element={<ProtectedRoute><IndividualDishesPage /></ProtectedRoute>} />
             <Route path="/drinks" element={<ProtectedRoute><DrinksPage /></ProtectedRoute>} />
+            <Route path="/search" element={<ProtectedRoute><SearchResultsPage /></ProtectedRoute>} />
             {/* Order management routes */}
             <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
             <Route path="/delivery" element={<ProtectedRoute><DeliveryPage /></ProtectedRoute>} />
@@ -67,13 +71,13 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             {/* Admin routes */}
-            <Route path="/admin/users" element={<UsersManagementPage />} />
-            <Route path="/admin/orders" element={<OrderManagementPage />} />
-            <Route path="/admin/menu" element={<MenuManagementPage />} />
-            <Route path="/admin/combos" element={<ComboManagementPage />} />
-            <Route path="/admin/messages" element={<MessagesManagementPage />} />
-            <Route path="/admin/reviews" element={<ReviewManagementPage />} />
-            <Route path="/admin/reports" element={<ReportsPage />} />
+            <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><UsersManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><OrderManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/menu" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><MenuManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/combos" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><ComboManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/messages" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><MessagesManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/reviews" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><ReviewManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><ReportsPage /></ProtectedRoute>} />
             {/* Demo route for testing mega menu */}
             <Route path="/menu-demo" element={<MenuDemo />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
@@ -82,6 +86,7 @@ const App = () => (
           </BrowserRouter>
         </TooltipProvider>
       </ChatProvider>
+    </CartProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

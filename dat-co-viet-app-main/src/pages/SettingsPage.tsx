@@ -5,9 +5,11 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Bell, MessageSquare, Shield, Globe, Moon, Sun, Mail, Smartphone } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const SettingsPage = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
@@ -32,6 +34,21 @@ const SettingsPage = () => {
       </Layout>
     );
   }
+
+  const handleSaveChanges = () => {
+    // In a real app, you'd send this data to an API
+    console.log({
+      notificationsEnabled,
+      emailNotifications,
+      smsNotifications,
+      darkMode,
+      language,
+    });
+    toast({
+      title: "Đã lưu cài đặt",
+      description: "Các thay đổi của bạn đã được lưu thành công.",
+    });
+  };
 
   return (
     <Layout>
@@ -255,7 +272,7 @@ const SettingsPage = () => {
               <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
                 Xóa tài khoản
               </Button>
-              <Button className="w-full">
+              <Button className="w-full" onClick={handleSaveChanges}>
                 Lưu thay đổi
               </Button>
             </div>

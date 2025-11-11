@@ -14,12 +14,14 @@ import { feastSets, reviews } from "@/data/mockData";
 import { FeastSet, Review } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 
 export default function SetDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isLoggedIn, user } = useAuth();
+  const { addToCart } = useCart();
   const [feastSet, setFeastSet] = useState<FeastSet | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
@@ -67,10 +69,13 @@ export default function SetDetailPage() {
   };
 
   const handleAddToCart = () => {
-    toast({
-      title: "Đã thêm vào giỏ hàng",
-      description: `${feastSet.name} (x${quantity}) đã được thêm vào giỏ hàng`,
-    });
+    if (feastSet) {
+      addToCart(feastSet, quantity);
+      toast({
+        title: "Đã thêm vào giỏ hàng",
+        description: `${feastSet.name} (x${quantity}) đã được thêm vào giỏ hàng`,
+      });
+    }
   };
 
   const handleOrderNow = () => {

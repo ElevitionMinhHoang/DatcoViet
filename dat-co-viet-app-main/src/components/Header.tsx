@@ -23,10 +23,19 @@ interface HeaderProps {
   onSettingsClick: () => void;
 }
 
+import { useState } from "react";
 export function Header({ onMenuClick, onProfileClick, onCartClick, onSettingsClick }: HeaderProps) {
   const { user, logout, isLoggedIn } = useAuth();
   const { unreadCount } = useChat();
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${searchQuery.trim()}`);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -60,13 +69,15 @@ export function Header({ onMenuClick, onProfileClick, onCartClick, onSettingsCli
           </div>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-md relative hidden md:flex">
+          <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md relative hidden md:flex">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Tìm mâm cỗ, món ăn..."
               className="pl-10 bg-muted/50"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
+          </form>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
