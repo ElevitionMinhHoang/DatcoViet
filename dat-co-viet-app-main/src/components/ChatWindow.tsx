@@ -34,7 +34,8 @@ export function ChatWindow({
     await sendMessage(conversation.id, content);
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
     return name
       .split(' ')
       .map(word => word[0])
@@ -141,7 +142,7 @@ export function CompactChatWindow({ conversation, onSelect, isActive }: CompactC
       <div className="flex items-center gap-3 w-full">
         <Avatar className="w-10 h-10">
           <AvatarFallback className="text-xs">
-            {otherParticipant?.userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+            {getInitials(otherParticipant?.userName)}
           </AvatarFallback>
         </Avatar>
         

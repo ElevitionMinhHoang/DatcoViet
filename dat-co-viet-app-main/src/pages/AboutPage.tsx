@@ -1,7 +1,9 @@
 import { Layout } from "@/components/layout/Layout";
+import { useNavigate } from "react-router-dom";
 import { ChefHat, Users, Truck, Star, Heart, Award } from "lucide-react";
 
 const AboutPage = () => {
+  const navigate = useNavigate();
   const features = [
     {
       icon: ChefHat,
@@ -130,7 +132,10 @@ const AboutPage = () => {
           <p className="mb-6 opacity-90">
             Hãy đặt mâm cỗ ngay hôm nay để tận hưởng hương vị truyền thống đích thực!
           </p>
-          <button className="bg-white text-primary px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+          <button
+            onClick={() => navigate("/menu")}
+            className="bg-white text-primary px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+          >
             Đặt cỗ ngay
           </button>
         </div>
