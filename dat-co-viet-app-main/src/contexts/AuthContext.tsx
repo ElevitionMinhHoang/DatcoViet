@@ -45,7 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for saved user in localStorage
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      const user = JSON.parse(savedUser);
+      user.createdAt = new Date(user.createdAt);
+      setUser(user);
     }
     setIsLoading(false);
   }, []);
