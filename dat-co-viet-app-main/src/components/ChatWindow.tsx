@@ -18,6 +18,16 @@ interface ChatWindowProps {
   showHeader?: boolean;
 }
 
+const getInitials = (name?: string) => {
+  if (!name) return "U";
+  return name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
+
 export function ChatWindow({ 
   conversation, 
   onClose, 
@@ -32,16 +42,6 @@ export function ChatWindow({
 
   const handleSendMessage = async (content: string) => {
     await sendMessage(conversation.id, content);
-  };
-
-  const getInitials = (name?: string) => {
-    if (!name) return "U";
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
   };
 
   if (isLoading) {
