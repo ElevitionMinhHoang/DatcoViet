@@ -67,13 +67,13 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             {/* Admin routes */}
-            <Route path="/admin/users" element={<UsersManagementPage />} />
-            <Route path="/admin/orders" element={<OrderManagementPage />} />
-            <Route path="/admin/menu" element={<MenuManagementPage />} />
-            <Route path="/admin/combos" element={<ComboManagementPage />} />
-            <Route path="/admin/messages" element={<MessagesManagementPage />} />
-            <Route path="/admin/reviews" element={<ReviewManagementPage />} />
-            <Route path="/admin/reports" element={<ReportsPage />} />
+            <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><UsersManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><OrderManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/menu" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><MenuManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/combos" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><ComboManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/messages" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><MessagesManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/reviews" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><ReviewManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={["admin"]} redirectTo="/"><ReportsPage /></ProtectedRoute>} />
             {/* Demo route for testing mega menu */}
             <Route path="/menu-demo" element={<MenuDemo />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
