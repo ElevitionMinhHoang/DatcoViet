@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test</title>
+    <script>
+        // Test localStorage functionality
+        function testLocalStorage() {
+            try {
+                localStorage.setItem('test', 'test');
+                const result = localStorage.getItem('test');
+                localStorage.removeItem('test');
+                console.log('LocalStorage test passed:', result === 'test');
+                return result === 'test';
+            } catch (e) {
+                console.error('LocalStorage test failed:', e);
+                return false;
+            }
+        }
+
+        // Test if user data exists in localStorage
+        function checkUserData() {
+            try {
+                const userData = localStorage.getItem('user');
+                console.log('User data in localStorage:', userData);
+                return userData;
+            } catch (e) {
+                console.error('Error reading localStorage:', e);
+                return null;
+            }
+        }
+
+        // Clear localStorage for testing
+        function clearAuthData() {
+            try {
+                localStorage.removeItem('user');
+                console.log('Auth data cleared');
+            } catch (e) {
+                console.error('Error clearing localStorage:', e);
+            }
+        }
+
+        // Run tests on page load
+        window.onload = function() {
+            console.log('=== Authentication Debug Test ===');
+            console.log('LocalStorage test:', testLocalStorage() ? 'PASSED' : 'FAILED');
+            
+            const userData = checkUserData();
+            if (userData) {
+                console.log('User is logged in:', JSON.parse(userData));
+            } else {
+                console.log('No user data found - user is not logged in');
+            }
+            
+            console.log('=== End Test ===');
+        }
+    </script>
+</head>
+<body>
+    <h1>Authentication Debug Test</h1>
+    <p>Check browser console for test results.</p>
+    <button onclick="clearAuthData()">Clear Auth Data</button>
+    <button onclick="checkUserData()">Check User Data</button>
+</body>
+</html>
