@@ -25,6 +25,7 @@ import DrinksPage from "./pages/DrinksPage";
 import OrdersPage from "./pages/OrdersPage";
 import DeliveryPage from "./pages/DeliveryPage";
 import HistoryPage from "./pages/HistoryPage";
+import SearchResultsPage from "./pages/SearchResultsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import MenuManagementPage from "./pages/admin/MenuManagementPage";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/special-sets" element={<ProtectedRoute><SpecialSetsPage /></ProtectedRoute>} />
             <Route path="/individual-dishes" element={<ProtectedRoute><IndividualDishesPage /></ProtectedRoute>} />
             <Route path="/drinks" element={<ProtectedRoute><DrinksPage /></ProtectedRoute>} />
+            <Route path="/search" element={<ProtectedRoute><SearchResultsPage /></ProtectedRoute>} />
             {/* Order management routes */}
             <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
             <Route path="/delivery" element={<ProtectedRoute><DeliveryPage /></ProtectedRoute>} />

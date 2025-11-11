@@ -7,24 +7,26 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChatWindow, CompactChatWindow } from "@/components/ChatWindow";
 import { LogOut, User, Mail, Phone, MapPin, Calendar, Utensils, Package, History, Bell, Edit, Users, ChefHat, MessageSquare, BarChart3, Star, MessageCircle, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { EditProfileModal } from "@/components/EditProfileModal";
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();
   const { conversations, activeConversation, setActiveConversation, createConversation, unreadCount } = useChat();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("profile");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Handle tab state from navigation
   useEffect(() => {
-    const state = history.state;
-    if (state && state.tab) {
-      setActiveTab(state.tab);
-      // Clear the state to prevent it from persisting
+    if (location.state && location.state.tab) {
+      setActiveTab(location.state.tab);
+      // Clear the state to prevent it from persisting on refresh
       window.history.replaceState({}, document.title);
     }
-  }, []);
+  }, [location.state]);
 
   const handleLogout = () => {
     logout();
@@ -32,9 +34,7 @@ const ProfilePage = () => {
   };
 
   const handleEditProfile = () => {
-    // This will open an edit modal or navigate to edit page
-    // For now, we'll just show an alert
-    alert("Tính năng chỉnh sửa thông tin sẽ được cập nhật sớm!");
+    setIsEditModalOpen(true);
   };
 
   if (!user) {
@@ -65,6 +65,7 @@ const ProfilePage = () => {
 
   return (
     <Layout>
+      <EditProfileModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold mb-8 text-center">Quản lý tài khoản</h1>
