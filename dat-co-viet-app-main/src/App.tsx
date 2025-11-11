@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
+import { CartProvider } from "@/contexts/CartContext";
 import { DebugRouter } from "@/components/DebugRouter";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -40,15 +41,16 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <ChatProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <DebugRouter />
-            <Routes>
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/auth" element={<AuthPage />} />
+      <CartProvider>
+        <ChatProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <DebugRouter />
+              <Routes>
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/auth" element={<AuthPage />} />
             <Route path="/menu" element={<ProtectedRoute><MenuPage /></ProtectedRoute>} />
             <Route path="/menu/sets/:id" element={<ProtectedRoute><SetDetailPage /></ProtectedRoute>} />
             <Route path="/menu/dishes/:id" element={<ProtectedRoute><DishDetailPage /></ProtectedRoute>} />
@@ -82,6 +84,7 @@ const App = () => (
           </BrowserRouter>
         </TooltipProvider>
       </ChatProvider>
+    </CartProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

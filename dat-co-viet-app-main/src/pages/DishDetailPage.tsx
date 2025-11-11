@@ -14,12 +14,14 @@ import { dishes, reviews } from "@/data/mockData";
 import { Dish, Review } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 
 export default function DishDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isLoggedIn, user } = useAuth();
+  const { addToCart } = useCart();
   const [dish, setDish] = useState<Dish | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
@@ -67,10 +69,13 @@ export default function DishDetailPage() {
   };
 
   const handleAddToCart = () => {
-    toast({
-      title: "Đã thêm vào giỏ hàng",
-      description: `${dish.name} (x${quantity}) đã được thêm vào giỏ hàng`,
-    });
+    if (dish) {
+      addToCart(dish, quantity);
+      toast({
+        title: "Đã thêm vào giỏ hàng",
+        description: `${dish.name} (x${quantity}) đã được thêm vào giỏ hàng`,
+      });
+    }
   };
 
   const handleOrderNow = () => {
