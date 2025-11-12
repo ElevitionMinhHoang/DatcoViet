@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int       @id @default(autoincrement())
+  email            String    @unique
+  password         String
+  role             Role      @default(USER)
+  failedLoginAttempts Int    @default(0)
+  isLocked         Boolean   @default(false)
+  passwordChangedAt DateTime?
+  passwordChangeCount Int    @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  orders           Order[]
+  shipperDeliveries Delivery[]
+}
+
+model Menu {
+  id        Int      @id @default(autoincrement())
+  name      String
+  price     Float
+  category  String
+  image     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    OrderItem[]
+}
+
+model Order {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  total       Float
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  items       OrderItem[]
+  payment     Payment?
+  feedback    Feedback?
+  delivery    Delivery?
+}
+
+model OrderItem {
+  id        Int   @id @default(autoincrement())
+  orderId   Int
+  order     Order @relation(fields: [orderId], references: [id])
+  menuId    Int
+  menu      Menu  @relation(fields: [menuId], references: [id])
+  quantity  Int
+  price     Float
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+  status    PaymentStatus @default(PENDING)
+  amount    Float
+  method    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Feedback {
+  id        Int       @id @default(autoincrement())
+  orderId   Int       @unique
+  order     Order     @relation(fields: [orderId], references: [id])
+  rating    Int
+  comment   String?
+  isApproved Boolean  @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Delivery {
+  id          Int       @id @default(autoincrement())
+  orderId     Int       @unique
+  order       Order     @relation(fields: [orderId], references: [id])
+  shipperId   Int
+  shipper     User      @relation(fields: [shipperId], references: [id])
+  status      DeliveryStatus @default(ASSIGNED)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum Role {
+  ADMIN
+  USER
+  CSKH
+  SHIPPER
+  MANAGER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  DELIVERING
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum DeliveryStatus {
+  ASSIGNED
+  PICKING_UP
+  ON_THE_WAY
+  DELIVERED
+  FAILED
+}
