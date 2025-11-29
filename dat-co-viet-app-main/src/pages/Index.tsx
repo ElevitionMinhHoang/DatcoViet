@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Layout } from "@/components/layout/Layout";
 import { FeastCard } from "@/components/FeastCard";
+import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { feastSets } from "@/data/mockData";
-import { ChefHat, Star, Award, Clock, Menu, ArrowRight } from "lucide-react";
+import { ChefHat, Star, Award, Clock, Menu, ArrowRight, Loader2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { menusAPI } from "@/services/api";
+import { Dish } from "@/types";
 import heroFeastImg from "@/assets/hero-feast.jpg";
 
 const Index = () => {
@@ -16,15 +17,43 @@ const Index = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const categories = ["Tất cả", "Gia đình", "Tiệc cưới", "Giỗ tổ tiên", "Thôi nôi"];
+  const categories = ["Tất cả", "Mâm Cỗ", "Món Ăn"];
 
-  const filteredFeastSets = selectedCategory === "Tất cả" 
-    ? feastSets.filter(set => set.isActive).slice(0, 6) // Show only 6 popular sets on homepage
-    : feastSets.filter(feast => feast.category === selectedCategory && feast.isActive);
+  useEffect(() => {
+    loadDishes();
+  }, []);
 
-  const handleViewDetails = (id: string) => {
-    navigate(`/menu/sets/${id}`);
+  const loadDishes = async () => {
+    try {
+      const dishesData = await menusAPI.getAllMenus();
+      setDishes(dishesData);
+    } catch (error) {
+      console.error('Failed to load dishes:', error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải dữ liệu món ăn từ server",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredDishes = selectedCategory === "Tất cả"
+    ? dishes.filter(dish => dish.isAvailable).slice(0, 6) // Show only 6 popular dishes on homepage
+    : dishes.filter(dish => dish.category === selectedCategory && dish.isAvailable);
+
+  const handleViewDetails = (id: string, category: string) => {
+    // Check if it's a feast set (IDs 37-41) or individual dish
+    const menuId = Number(id);
+    if (menuId >= 37 && menuId <= 41) {
+      navigate(`/menu/sets/${id}`);
+    } else {
+      navigate(`/menu/dishes/${id}`);
+    }
   };
 
   const handleViewMenu = () => {
@@ -39,8 +68,17 @@ const Index = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Đang tải dữ liệu...</span>
+      </div>
+    );
+  }
+
   return (
-    <Layout showBottomNav={!!user}>
+    <div>
       {/* Hero Section */}
       <section className="relative h-[400px] overflow-hidden">
         <img
@@ -65,9 +103,9 @@ const Index = () => {
                   XEM THỰC ĐƠN
                 </Button>
                 {!user && (
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
+                  <Button
+                    variant="outline"
+                    size="lg"
                     className="text-white border-white hover:bg-white hover:text-primary"
                     onClick={handleAuth}
                   >
@@ -150,16 +188,56 @@ const Index = () => {
             </p>
           </div>
 
+          {/* Category Filter */}
+          <div className="flex flex-wrap gap-2 justify-center mb-6">
+            {categories.map((category) => (
+              <Badge
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                className={`cursor-pointer px-4 py-2 transition-smooth ${
+                  selectedCategory === category 
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                    : "hover:bg-primary hover:text-primary-foreground"
+                }`}
+                onClick={() => setSelectedCategory(category)}
+              >
+                {category}
+              </Badge>
+            ))}
+          </div>
+
           {/* Feast Sets Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {filteredFeastSets.map((feastSet) => (
+            {filteredDishes.map((dish) => (
               <FeastCard
-                key={feastSet.id}
-                feastSet={feastSet}
-                onViewDetails={handleViewDetails}
+                key={dish.id}
+                feastSet={{
+                  id: dish.id,
+                  name: dish.name,
+                  description: dish.description,
+                  image: dish.image,
+                  price: dish.price,
+                  category: dish.category,
+                  dishes: [],
+                  servings: 4,
+                  isPopular: true,
+                  rating: 4.8,
+                  reviewCount: 124,
+                  isActive: dish.isAvailable,
+                  tags: [],
+                }}
+                onViewDetails={() => handleViewDetails(dish.id, dish.category)}
               />
             ))}
           </div>
+
+          {filteredDishes.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground text-lg">
+                Không tìm thấy món ăn nào phù hợp
+              </p>
+            </div>
+          )}
 
           <div className="text-center">
             <Button 
@@ -173,7 +251,7 @@ const Index = () => {
           </div>
         </div>
       </section>
-    </Layout>
+    </div>
   );
 };
 

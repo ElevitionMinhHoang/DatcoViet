@@ -13,7 +13,7 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { Role } from '@prisma/client';
+// import { Role } from '@prisma/client';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('payments')
@@ -53,7 +53,7 @@ export class PaymentsController {
 
   @Patch(':id/refund')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles('ADMIN', 'MANAGER')
   @ApiOperation({ summary: 'Refund a payment' })
   @ApiResponse({ status: 200, description: 'Payment successfully refunded.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -61,5 +61,16 @@ export class PaymentsController {
   @ApiResponse({ status: 404, description: 'Payment not found.' })
   refund(@Param('id', ParseIntPipe) id: number) {
     return this.paymentsService.refund(id);
+  }
+
+  @Get('admin/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @ApiOperation({ summary: 'Get payment statistics for admin dashboard' })
+  @ApiResponse({ status: 200, description: 'Payment statistics successfully retrieved.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  getPaymentStats() {
+    return this.paymentsService.getPaymentStats();
   }
 }

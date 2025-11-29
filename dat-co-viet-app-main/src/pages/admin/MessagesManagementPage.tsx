@@ -1,4 +1,3 @@
-import AdminLayout from "@/components/layout/AdminLayout";
 import { useChat } from "@/contexts/ChatContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { MessageSquare, Search, Filter, Mail, User, Clock, CheckCircle, Plus } from "lucide-react";
@@ -35,8 +34,7 @@ const MessagesManagementPage = () => {
   const unreadConversations = conversations.filter(conv => conv.unreadCount > 0);
 
   return (
-    <AdminLayout title="Tin nhắn & Hỗ trợ">
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">Tin nhắn & Hỗ trợ khách hàng</h1>
@@ -167,7 +165,6 @@ const MessagesManagementPage = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

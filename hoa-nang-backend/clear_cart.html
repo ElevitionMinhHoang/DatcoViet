@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xóa Giỏ Hàng - Hoa Nắng</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e74c3c;
+            text-align: center;
+        }
+        .button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            width: 100%;
+        }
+        .button:hover {
+            background-color: #c0392b;
+        }
+        .info {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Xóa Giỏ Hàng</h1>
+        
+        <div class="info">
+            <p><strong>Vấn đề:</strong> Giỏ hàng của bạn đang chứa món ăn không hợp lệ.</p>
+            <p><strong>Giải pháp:</strong> Nhấn nút bên dưới để xóa toàn bộ giỏ hàng và bắt đầu lại.</p>
+        </div>
+
+        <button class="button" onclick="clearCart()">🗑️ XÓA TOÀN BỘ GIỎ HÀNG</button>
+        
+        <div id="result"></div>
+
+        <div class="info">
+            <p><strong>Sau khi xóa:</strong></p>
+            <ol>
+                <li>Quay lại trang chủ hoặc trang menu</li>
+                <li>Thêm món ăn mới từ thực đơn</li>
+                <li>Đặt hàng bình thường</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function clearCart() {
+            try {
+                // Clear cart from localStorage
+                localStorage.removeItem('cart');
+                
+                // Show success message
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <p>✅ <strong>Thành công!</strong> Giỏ hàng đã được xóa sạch.</p>
+                        <p>Bây giờ bạn có thể quay lại trang web và thêm món ăn mới.</p>
+                    </div>
+                `;
+                
+                console.log('Cart cleared successfully');
+            } catch (error) {
+                alert('Lỗi khi xóa giỏ hàng: ' + error.message);
+                console.error('Error clearing cart:', error);
+            }
+        }
+
+        // Check current cart status
+        window.onload = function() {
+            const cartData = localStorage.getItem('cart');
+            if (cartData) {
+                try {
+                    const cartItems = JSON.parse(cartData);
+                    console.log('Current cart items:', cartItems);
+                    
+                    // Show current cart info
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = `
+                        <div class="info">
+                            <p><strong>Giỏ hàng hiện tại:</strong> ${cartItems.length} món</p>
+                            <p>Danh sách món ăn:</p>
+                            <ul>
+                                ${cartItems.map(item => `<li>${item.item.name} (ID: ${item.item.id})</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error('Error parsing cart data:', error);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

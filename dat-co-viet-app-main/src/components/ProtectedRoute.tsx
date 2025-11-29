@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProtectedRouteProps {
@@ -10,35 +9,31 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({
   children,
-  allowedRoles = ["customer"],
-  redirectTo = "/admin/users",
+  allowedRoles = ["USER"],
+  redirectTo = "/",
 }: ProtectedRouteProps) => {
   const { user, isLoggedIn, isLoading } = useAuth();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isLoading) {
-      return;
-    }
-    if (!isLoggedIn) {
-      navigate("/auth");
-    } else if (user && !allowedRoles.includes(user.role)) {
-      navigate(redirectTo);
-    }
-  }, [user, allowedRoles, redirectTo, navigate, isLoggedIn, isLoading]);
+  console.log('ProtectedRoute render:', { isLoading, isLoggedIn, user });
 
+  // If still loading, show loading
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
+  // If not logged in, redirect to auth
   if (!isLoggedIn) {
-    return null;
+    console.log('ProtectedRoute - not logged in, redirecting to /auth');
+    return <Navigate to="/auth" replace />;
   }
 
+  // If user role not allowed, redirect
   if (user && !allowedRoles.includes(user.role)) {
-    return null; // or a loading spinner
+    console.log('ProtectedRoute - role not allowed, redirecting to:', redirectTo);
+    return <Navigate to={redirectTo} replace />;
   }
 
+  console.log('ProtectedRoute - user authenticated and authorized, rendering children');
   return <>{children}</>;
 };
 

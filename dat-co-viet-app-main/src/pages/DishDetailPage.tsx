@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Star, Users, Clock, Plus, Minus, ShoppingCart } from "lucide-react";
 import ReviewsSection from "@/components/ReviewsSection";
-import { dishes, reviews } from "@/data/mockData";
+import { menusAPI, feedbackAPI } from "@/services/api";
 import { Dish, Review } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,31 +25,65 @@ export default function DishDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
   const [dishReviews, setDishReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const found = dishes.find(d => d.id === id);
-    if (found) {
-      setDish(found);
-      // Filter reviews for this dish (in a real app, this would be API call)
-      const dishReviews = reviews.filter(review => 
-        review.comment.toLowerCase().includes(found.name.toLowerCase())
-      );
-      setDishReviews(dishReviews);
-    }
-  }, [id]);
+    const loadDish = async () => {
+      if (!id) return;
+      
+      setIsLoading(true);
+      try {
+        const dishData = await menusAPI.getMenuById(id);
+        setDish(dishData);
+        
+        // Load reviews for this menu item
+        try {
+          const reviews = await feedbackAPI.getFeedbackByMenu(id);
+          setDishReviews(reviews);
+        } catch (reviewError) {
+          console.error('Failed to load reviews:', reviewError);
+          // If reviews fail to load, just continue with empty reviews
+          setDishReviews([]);
+        }
+      } catch (error) {
+        console.error('Failed to load dish:', error);
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải thông tin món ăn",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDish();
+  }, [id, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/4 mx-auto mb-6"></div>
+            <div className="h-10 bg-gray-200 rounded w-48 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!dish) {
     return (
-      <Layout>
-        <div className="container mx-auto px-4 py-6">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Không tìm thấy món ăn</h1>
-            <Button onClick={() => navigate('/individual-dishes')}>
-              Quay về món ăn lẻ
-            </Button>
-          </div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Không tìm thấy món ăn</h1>
+          <Button onClick={() => navigate('/individual-dishes')}>
+            Quay về món ăn lẻ
+          </Button>
         </div>
-      </Layout>
+      </div>
     );
   }
 
@@ -99,20 +132,24 @@ export default function DishDetailPage() {
       return;
     }
     
+    // Add dish to cart first
+    if (dish) {
+      addToCart(dish, quantity);
+      toast({
+        title: "Đã thêm vào giỏ hàng",
+        description: `${dish.name} (x${quantity}) đã được thêm vào giỏ hàng`,
+      });
+    }
+    
     // Redirect to checkout page for logged in users
     navigate("/checkout");
-    toast({
-      title: "Chuyển đến trang thanh toán",
-      description: "Bạn đang được chuyển đến trang thanh toán",
-    });
   };
 
   const totalPrice = dish.price * quantity;
 
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6">
         {/* Back button */}
         <Button
           variant="ghost"
@@ -184,6 +221,7 @@ export default function DishDetailPage() {
                 ))}
               </div>
             </div>
+
 
             {/* Reviews Section */}
             <ReviewsSection
@@ -311,6 +349,5 @@ export default function DishDetailPage() {
           </div>
         </div>
       </div>
-    </Layout>
   );
 }

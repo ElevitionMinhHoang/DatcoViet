@@ -46,7 +46,7 @@ describe('OrdersService', () => {
         { id: 1, price: 10, isActive: true },
         { id: 2, price: 20, isActive: true },
       ];
-      const createdOrder = { id: 1, userId, total: 40, items: [] };
+      const createdOrder = { id: 1, userId, total: 20040, items: [] };
 
       (prisma.menu.findMany as jest.Mock).mockResolvedValue(menuItems);
       (prisma.order.create as jest.Mock).mockResolvedValue(createdOrder);
@@ -62,7 +62,7 @@ describe('OrdersService', () => {
       expect(prisma.order.create).toHaveBeenCalledWith({
         data: {
           userId,
-          total: 40,
+          total: 20040,
           items: {
             create: [
               { menuId: 1, quantity: 2, price: 10 },

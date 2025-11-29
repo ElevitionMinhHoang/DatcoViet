@@ -8,4 +8,8 @@ export class CreatePaymentDto {
   @IsString()
   @IsNotEmpty()
   method: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  amount: number;
 }

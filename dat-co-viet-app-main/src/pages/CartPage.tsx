@@ -1,4 +1,3 @@
-import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -12,8 +11,7 @@ const CartPage = () => {
   const total = totalPrice + shipping;
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Giỏ hàng của bạn</h1>
         {cartItems.length === 0 ? (
           <div className="text-center">
@@ -26,20 +24,20 @@ const CartPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
               <div className="space-y-4">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
+                {cartItems.map((cartItem) => (
+                  <div key={cartItem.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-4">
                       <img
-                        src={item.image || "/placeholder.svg"}
-                        alt={item.name}
+                        src={cartItem.item.image || "/placeholder.svg"}
+                        alt={cartItem.item.name}
                         width={80}
                         height={80}
                         className="rounded-md object-cover"
                       />
                       <div>
-                        <h3 className="font-semibold">{item.name}</h3>
+                        <h3 className="font-semibold">{cartItem.item.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {item.price.toLocaleString("vi-VN")}₫
+                          {cartItem.item.price?.toLocaleString("vi-VN")}₫
                         </p>
                       </div>
                     </div>
@@ -48,20 +46,20 @@ const CartPage = () => {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(cartItem.id, cartItem.quantity - 1)}
                         >
                           -
                         </Button>
                         <Input
                           type="number"
-                          value={item.quantity}
+                          value={cartItem.quantity}
                           className="w-16 text-center"
                           readOnly
                         />
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(cartItem.id, cartItem.quantity + 1)}
                         >
                           +
                         </Button>
@@ -70,7 +68,7 @@ const CartPage = () => {
                         variant="ghost"
                         size="icon"
                         className="text-red-500 hover:text-red-600"
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => removeFromCart(cartItem.id)}
                       >
                         X
                       </Button>
@@ -103,7 +101,6 @@ const CartPage = () => {
           </div>
         )}
       </div>
-    </Layout>
   );
 };
 

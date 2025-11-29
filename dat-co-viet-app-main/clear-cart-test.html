@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Cart Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Clear Cart Test Utility</h1>
+    <p>Click the button below to clear localStorage cart data:</p>
+    
+    <button onclick="clearCart()">Clear Cart Data</button>
+    <button onclick="checkCart()">Check Current Cart</button>
+    
+    <div id="result"></div>
+
+    <script>
+        function clearCart() {
+            try {
+                localStorage.removeItem('cart');
+                document.getElementById('result').innerHTML = 
+                    '<p class="success">✅ Cart data cleared successfully!</p>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    '<p class="error">❌ Error clearing cart: ' + error.message + '</p>';
+            }
+        }
+
+        function checkCart() {
+            try {
+                const cart = localStorage.getItem('cart');
+                if (!cart) {
+                    document.getElementById('result').innerHTML = 
+                        '<p class="success">✅ Cart is empty</p>';
+                } else {
+                    const cartData = JSON.parse(cart);
+                    document.getElementById('result').innerHTML = 
+                        '<p>📦 Current cart contains ' + cartData.length + ' items:</p>' +
+                        '<pre>' + JSON.stringify(cartData, null, 2) + '</pre>';
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    '<p class="error">❌ Error reading cart: ' + error.message + '</p>';
+            }
+        }
+
+        // Check current cart on page load
+        checkCart();
+    </script>
+</body>
+</html>

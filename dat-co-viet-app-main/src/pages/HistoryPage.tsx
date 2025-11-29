@@ -1,4 +1,3 @@
-import { Layout } from "@/components/layout/Layout";
 import { History, CheckCircle, Star, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { orders, reviews } from "@/data/mockData";
@@ -22,28 +21,25 @@ const HistoryPage = () => {
 
   if (!user) {
     return (
-      <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8">Lịch sử đơn hàng</h1>
-            <div className="bg-card rounded-lg border p-6 text-center">
-              <History className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Vui lòng đăng nhập</h2>
-              <p className="text-muted-foreground">
-                Bạn cần đăng nhập để xem lịch sử đơn hàng
-              </p>
-            </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold mb-8">Lịch sử đơn hàng</h1>
+          <div className="bg-card rounded-lg border p-6 text-center">
+            <History className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Vui lòng đăng nhập</h2>
+            <p className="text-muted-foreground">
+              Bạn cần đăng nhập để xem lịch sử đơn hàng
+            </p>
           </div>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Lịch sử đơn hàng</h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Lịch sử đơn hàng</h1>
 
           {userOrders.length === 0 ? (
             <div className="bg-card rounded-lg border p-6">
@@ -189,10 +185,9 @@ const HistoryPage = () => {
                 </div>
               </div>
             </div>
-          )}
-        </div>
+        )}
       </div>
-    </Layout>
+    </div>
   );
 };
 

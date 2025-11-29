@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Star, Users, Clock, Plus, Minus, ShoppingCart } from "lucide-react";
 import ReviewsSection from "@/components/ReviewsSection";
-import { feastSets, reviews } from "@/data/mockData";
+import { menusAPI } from "@/services/api";
 import { FeastSet, Review } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,31 +25,76 @@ export default function SetDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
   const [feastSetReviews, setFeastSetReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const found = feastSets.find(set => set.id === id);
-    if (found) {
-      setFeastSet(found);
-      // Filter reviews for this feast set (in a real app, this would be API call)
-      const feastSetReviews = reviews.filter(review =>
-        review.comment.toLowerCase().includes(found.name.toLowerCase())
-      );
-      setFeastSetReviews(feastSetReviews);
-    }
-  }, [id]);
+    const loadFeastSet = async () => {
+      if (!id) return;
+      
+      setIsLoading(true);
+      try {
+        // For now, treat feast sets as regular menu items
+        // In the future, we should have a separate API for feast sets
+        const menuData = await menusAPI.getMenuById(id);
+        
+        // Convert menu item to feast set format
+        const feastSetData: FeastSet = {
+          id: menuData.id,
+          name: menuData.name,
+          description: menuData.description,
+          image: menuData.image,
+          price: menuData.price,
+          dishes: [], // Empty for now, as backend doesn't support feast set details
+          servings: 4, // Default servings
+          category: menuData.category,
+          isPopular: true,
+          rating: 4.8,
+          reviewCount: 0,
+          isActive: menuData.isAvailable,
+          tags: [],
+        };
+        
+        setFeastSet(feastSetData);
+        setFeastSetReviews([]); // Empty reviews for now
+      } catch (error) {
+        console.error('Failed to load feast set:', error);
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải thông tin mâm cỗ",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadFeastSet();
+  }, [id, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/4 mx-auto mb-6"></div>
+            <div className="h-10 bg-gray-200 rounded w-48 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!feastSet) {
     return (
-      <Layout>
-        <div className="container mx-auto px-4 py-6">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Không tìm thấy mâm cỗ</h1>
-            <Button onClick={() => navigate('/menu')}>
-              Quay về thực đơn
-            </Button>
-          </div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Không tìm thấy mâm cỗ</h1>
+          <Button onClick={() => navigate('/menu')}>
+            Quay về thực đơn
+          </Button>
         </div>
-      </Layout>
+      </div>
     );
   }
 
@@ -99,29 +143,33 @@ export default function SetDetailPage() {
       return;
     }
     
+    // Add feast set to cart first
+    if (feastSet) {
+      addToCart(feastSet, quantity);
+      toast({
+        title: "Đã thêm vào giỏ hàng",
+        description: `${feastSet.name} (x${quantity}) đã được thêm vào giỏ hàng`,
+      });
+    }
+    
     // Redirect to checkout page for logged in users
     navigate("/checkout");
-    toast({
-      title: "Chuyển đến trang thanh toán",
-      description: "Bạn đang được chuyển đến trang thanh toán",
-    });
   };
 
   const totalPrice = feastSet.price * quantity;
 
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-6">
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/menu')}
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Quay về thực đơn
-        </Button>
+    <div className="container mx-auto px-4 py-6">
+      {/* Back button */}
+      <Button
+        variant="ghost"
+        onClick={() => navigate('/menu')}
+        className="mb-4"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Quay về thực đơn
+      </Button>
 
         {/* Hero Image */}
         <div className="relative mb-6 rounded-lg overflow-hidden">
@@ -324,8 +372,7 @@ export default function SetDetailPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
       </div>
-    </Layout>
+    </div>
   );
 }

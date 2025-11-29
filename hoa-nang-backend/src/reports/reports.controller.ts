@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, Query } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -39,5 +39,71 @@ export class ReportsController {
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   getTopCustomers() {
     return this.reportsService.getTopCustomers();
+  }
+
+  @Get('revenue/daily')
+  @ApiOperation({ summary: 'Get revenue data by day for charts' })
+  @ApiResponse({ status: 200, description: 'Revenue by day data successfully retrieved.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  getRevenueByDay() {
+    return this.reportsService.getRevenueByDay();
+  }
+
+  @Get('orders/status')
+  @ApiOperation({ summary: 'Get orders count by status for charts' })
+  @ApiResponse({ status: 200, description: 'Orders by status data successfully retrieved.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  getOrdersByStatus() {
+    return this.reportsService.getOrdersByStatus();
+  }
+
+  @Get('summary/range')
+  @ApiOperation({ summary: 'Get summary report for date range' })
+  @ApiResponse({ status: 200, description: 'Summary report for date range successfully retrieved.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  getSummaryByDateRange(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string
+  ) {
+    return this.reportsService.getSummaryByDateRange(startDate, endDate);
+  }
+
+  @Get('revenue/daily/range')
+  @ApiOperation({ summary: 'Get revenue data by day for date range' })
+  @ApiResponse({ status: 200, description: 'Revenue by day data for date range successfully retrieved.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  getRevenueByDateRange(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string
+  ) {
+    return this.reportsService.getRevenueByDateRange(startDate, endDate);
+  }
+
+  @Get('orders/status/range')
+  @ApiOperation({ summary: 'Get orders count by status for date range' })
+  @ApiResponse({ status: 200, description: 'Orders by status data for date range successfully retrieved.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  getOrdersByStatusByDateRange(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string
+  ) {
+    return this.reportsService.getOrdersByStatusByDateRange(startDate, endDate);
+  }
+
+  @Get('menu/top-selling/range')
+  @ApiOperation({ summary: 'Get top selling menu items for date range' })
+  @ApiResponse({ status: 200, description: 'Top selling menu items for date range successfully retrieved.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  getTopSellingMenuItemsByDateRange(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string
+  ) {
+    return this.reportsService.getTopSellingMenuItemsByDateRange(startDate, endDate);
   }
 }

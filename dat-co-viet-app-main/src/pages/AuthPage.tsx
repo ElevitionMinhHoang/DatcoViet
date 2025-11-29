@@ -51,11 +51,33 @@ export default function AuthPage() {
     const success = await login(loginForm.email, loginForm.password);
     
     if (success) {
-      toast({
-        title: "Đăng nhập thành công!",
-        description: "Chào mừng bạn quay trở lại.",
-      });
-      navigate('/');
+      // Get user data from localStorage to check role
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const userData = JSON.parse(savedUser);
+        
+        // If user is admin, redirect to admin users management
+        if (userData.role === 'ADMIN') {
+          toast({
+            title: "Đăng nhập thành công!",
+            description: "Chào mừng quản trị viên.",
+          });
+          navigate('/admin/users');
+        } else {
+          toast({
+            title: "Đăng nhập thành công!",
+            description: "Chào mừng bạn quay trở lại.",
+          });
+          navigate('/');
+        }
+      } else {
+        // Fallback to home if user data not found
+        toast({
+          title: "Đăng nhập thành công!",
+          description: "Chào mừng bạn quay trở lại.",
+        });
+        navigate('/');
+      }
     } else {
       toast({
         title: "Đăng nhập thất bại",
@@ -107,18 +129,43 @@ export default function AuthPage() {
     }
 
     setIsLoading(true);
-    const success = await register(registerForm.email, registerForm.password, registerForm.name, registerForm.phone);
-    
-    if (success) {
-      toast({
-        title: "Đăng ký thành công!",
-        description: "Tài khoản của bạn đã được tạo. Vui lòng kiểm tra email để xác thực tài khoản.",
-      });
-      navigate('/');
-    } else {
+    try {
+      const success = await register(registerForm.email, registerForm.password, registerForm.name, registerForm.phone);
+      
+      if (success) {
+        // Get user data from localStorage to check role
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          const userData = JSON.parse(savedUser);
+          
+          // If user is admin, redirect to admin users management
+          if (userData.role === 'ADMIN') {
+            toast({
+              title: "Đăng ký thành công!",
+              description: "Tài khoản quản trị viên đã được tạo.",
+            });
+            navigate('/admin/users');
+          } else {
+            toast({
+              title: "Đăng ký thành công!",
+              description: "Tài khoản của bạn đã được tạo. Vui lòng kiểm tra email để xác thực tài khoản.",
+            });
+            navigate('/');
+          }
+        } else {
+          // Fallback to home if user data not found
+          toast({
+            title: "Đăng ký thành công!",
+            description: "Tài khoản của bạn đã được tạo. Vui lòng kiểm tra email để xác thực tài khoản.",
+          });
+          navigate('/');
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Đã xảy ra lỗi không xác định';
       toast({
         title: "Đăng ký thất bại",
-        description: "Email này đã được sử dụng",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -243,8 +290,9 @@ export default function AuthPage() {
               <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                 <p className="text-sm font-medium mb-2">Tài khoản demo:</p>
                 <div className="text-xs space-y-1 text-muted-foreground">
-                  <div>👑 Admin: admin@example.com / Admin@1234</div>
-                  <div>👤 Khách hàng: user@example.com / User@1234</div>
+                  <div>👑 Admin: admin@example.com / password</div>
+                  <div>👤 Khách hàng: user@example.com / password</div>
+                  <div>🚚 Shipper: shipper@example.com / password</div>
                 </div>
               </div>
             </TabsContent>

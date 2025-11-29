@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, IsArray } from 'class-validator';
 
 export class CreateFeedbackDto {
   @IsInt()
@@ -14,4 +14,8 @@ export class CreateFeedbackDto {
   @IsString()
   @IsOptional()
   comment?: string;
+
+  @IsArray()
+  @IsOptional()
+  images?: string[];
 }

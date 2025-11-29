@@ -1,24 +1,46 @@
-import { useState } from "react";
-import { Layout } from "@/components/layout/Layout";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Grid, List } from "lucide-react";
-import { dishes } from "@/data/mockData";
+import { menusAPI } from "@/services/api";
 import { Dish } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 
 export default function IndividualDishesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const dishCategories = ["Tất cả", "Khai vị", "Món chính", "Món phụ", "Tráng miệng"];
+
+  useEffect(() => {
+    const loadDishes = async () => {
+      try {
+        const dishesData = await menusAPI.getAllMenus();
+        setDishes(dishesData);
+      } catch (error) {
+        console.error('Failed to load dishes:', error);
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải dữ liệu món ăn từ server",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDishes();
+  }, [toast]);
 
   const filteredDishes = dishes.filter(dish => {
     const matchesSearch = dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -27,6 +49,7 @@ export default function IndividualDishesPage() {
     return matchesSearch && matchesCategory && dish.isAvailable;
   });
   const { isLoggedIn, user } = useAuth();
+  const { addToCart } = useCart();
 
   const handleAddToCart = (id: string) => {
     if (!isLoggedIn) {
@@ -51,6 +74,8 @@ export default function IndividualDishesPage() {
     
     const dish = dishes.find(d => d.id === id);
     if (dish) {
+      // Use CartContext to add to cart
+      addToCart(dish, 1);
       toast({
         title: "Đã thêm vào giỏ hàng",
         description: `${dish.name} đã được thêm vào giỏ hàng`,
@@ -124,9 +149,21 @@ export default function IndividualDishesPage() {
     </Card>
   );
 
-  return (
-    <Layout>
+  if (isLoading) {
+    return (
       <div className="container mx-auto px-4 py-6">
+        <div className="flex justify-center items-center min-h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Đang tải dữ liệu...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Món Ăn Lẻ
@@ -202,6 +239,5 @@ export default function IndividualDishesPage() {
           </div>
         )}
       </div>
-    </Layout>
   );
 }

@@ -1,4 +1,3 @@
-import { Layout } from "@/components/layout/Layout";
 import { useNavigate } from "react-router-dom";
 import { ChefHat, Users, Truck, Star, Heart, Award } from "lucide-react";
 
@@ -45,8 +44,7 @@ const AboutPage = () => {
   ];
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-gradient bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent mb-6">
@@ -140,7 +138,6 @@ const AboutPage = () => {
           </button>
         </div>
       </div>
-    </Layout>
   );
 };
 

@@ -13,14 +13,34 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        email: registerDto.email,
-        password: hashedPassword,
-      },
-    });
-    return this.generateTokens(user.id, user.email, user.role);
+    try {
+      // Check if user already exists
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: registerDto.email },
+      });
+
+      if (existingUser) {
+        throw new UnauthorizedException('Email already exists');
+      }
+
+      const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+      const user = await this.prisma.user.create({
+        data: {
+          email: registerDto.email,
+          password: hashedPassword,
+          name: registerDto.name,
+          phone: registerDto.phone,
+        },
+      });
+      return this.generateTokens(user.id, user.email, user.role);
+    } catch (error) {
+      console.error('Registration error:', error);
+      // If database connection fails, provide a more helpful error
+      if (error.code === 'P1001') {
+        throw new UnauthorizedException('Database connection failed. Please try again later.');
+      }
+      throw error;
+    }
   }
 
   async login(loginDto: LoginDto) {

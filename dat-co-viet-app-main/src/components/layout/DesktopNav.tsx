@@ -21,7 +21,8 @@ import {
   Settings,
   Users,
   Package,
-  BarChart3
+  BarChart3,
+  LayoutDashboard
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -29,19 +30,19 @@ const menuItems = {
   "Thực đơn": [
     {
       title: "Mâm cỗ đặc biệt",
-      href: "/special-sets",
+      to: "/special-sets",
       description: "Các mâm cỗ được thiết kế sẵn, phù hợp cho các dịp lễ, tết, hội họp.",
       icon: ChefHat,
     },
     {
       title: "Món ăn lẻ",
-      href: "/individual-dishes",
+      to: "/individual-dishes",
       description: "Lựa chọn từng món ăn riêng lẻ để tự tạo mâm cỗ theo ý thích.",
       icon: Salad,
     },
     {
       title: "Đồ uống",
-      href: "/drinks",
+      to: "/drinks",
       description: "Các loại đồ uống đa dạng từ truyền thống đến hiện đại.",
       icon: GlassWater,
     },
@@ -72,7 +73,7 @@ export function DesktopNav() {
                 <ListItem
                   key={component.title}
                   title={component.title}
-                  href={component.href}
+                  to={component.to}
                   icon={component.icon}
                 >
                   {component.description}
@@ -99,7 +100,7 @@ export function DesktopNav() {
         </NavigationMenuItem>
         
         {/* Admin Navigation - Only show for admin users */}
-        {user?.role === 'admin' && (
+        {user?.role === 'ADMIN' && (
           <NavigationMenuItem>
             <NavigationMenuTrigger className="navigation-menu-trigger">
               Quản trị
@@ -107,29 +108,36 @@ export function DesktopNav() {
             <NavigationMenuContent className="navigation-menu-content">
               <ul className="grid w-[300px] gap-3 p-4">
                 <ListItem
+                  title="Dashboard"
+                  to="/admin"
+                  icon={LayoutDashboard}
+                >
+                  Tổng quan hệ thống và thống kê
+                </ListItem>
+                <ListItem
                   title="Quản lý người dùng"
-                  href="/admin/users"
+                  to="/admin/users"
                   icon={Users}
                 >
                   Quản lý thông tin khách hàng và nhân viên
                 </ListItem>
                 <ListItem
                   title="Quản lý đơn hàng"
-                  href="/admin/orders"
+                  to="/admin/orders"
                   icon={Package}
                 >
                   Xem và xử lý các đơn hàng
                 </ListItem>
                 <ListItem
                   title="Quản lý món ăn"
-                  href="/admin/menu"
+                  to="/admin/menu"
                   icon={Utensils}
                 >
                   Quản lý thực đơn và món ăn
                 </ListItem>
                 <ListItem
                   title="Báo cáo & Thống kê"
-                  href="/admin/reports"
+                  to="/admin/reports"
                   icon={BarChart3}
                 >
                   Xem báo cáo doanh thu và thống kê
@@ -144,15 +152,16 @@ export function DesktopNav() {
 }
 
 const ListItem = React.forwardRef<
-  React.ElementRef<"a">,
-  React.ComponentPropsWithoutRef<"a"> & {
+  React.ElementRef<typeof NavLink>,
+  React.ComponentPropsWithoutRef<typeof NavLink> & {
     icon?: React.ComponentType<{ className?: string }>;
+    title?: string;
   }
 >(({ className, title, children, icon: Icon, ...props }, ref) => {
   return (
     <li>
       <NavigationMenuLink asChild>
-        <a
+        <NavLink
           ref={ref}
           className={cn(
             "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors menu-item-hover",
@@ -160,14 +169,18 @@ const ListItem = React.forwardRef<
           )}
           {...props}
         >
-          <div className="flex items-center gap-2">
-            {Icon && <Icon className="w-4 h-4 text-primary" />}
-            <div className="text-sm font-medium leading-none">{title}</div>
-          </div>
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground ml-6">
-            {children}
-          </p>
-        </a>
+          {({ isActive, isPending, isTransitioning }) => (
+            <>
+              <div className="flex items-center gap-2">
+                {Icon && <Icon className="w-4 h-4 text-primary" />}
+                <div className="text-sm font-medium leading-none">{title}</div>
+              </div>
+              <p className="line-clamp-2 text-sm leading-snug text-muted-foreground ml-6">
+                {typeof children === 'function' ? children({ isActive, isPending, isTransitioning }) : children}
+              </p>
+            </>
+          )}
+        </NavLink>
       </NavigationMenuLink>
     </li>
   );

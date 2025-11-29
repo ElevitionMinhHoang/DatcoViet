@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 
 describe('AuthController (e2e)', () => {
@@ -16,9 +16,15 @@ describe('AuthController (e2e)', () => {
   });
 
   it('/auth/register (POST)', () => {
+    const uniqueEmail = `test${Date.now()}@example.com`;
     return request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email: 'test@example.com', password: 'password' })
+      .send({
+        email: uniqueEmail,
+        password: 'password123',
+        name: 'Test User',
+        phone: '0123456789'
+      })
       .expect(201)
       .then((res) => {
         expect(res.body).toHaveProperty('access_token');
@@ -26,13 +32,19 @@ describe('AuthController (e2e)', () => {
   });
 
   it('/auth/login (POST)', async () => {
+    const uniqueEmail = `test${Date.now()}@example.com`;
     await request(app.getHttpServer())
         .post('/auth/register')
-        .send({ email: 'test@example.com', password: 'password' });
+        .send({
+          email: uniqueEmail,
+          password: 'password123',
+          name: 'Test User',
+          phone: '0123456789'
+        });
 
     return request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'test@example.com', password: 'password' })
+      .send({ email: uniqueEmail, password: 'password123' })
       .expect(201)
       .then((res) => {
         expect(res.body).toHaveProperty('access_token');

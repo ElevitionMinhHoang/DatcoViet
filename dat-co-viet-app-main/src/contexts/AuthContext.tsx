@@ -1,53 +1,56 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
+import { authAPI, usersAPI } from '@/services/api';
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string, phone: string) => Promise<boolean>;
   logout: () => void;
-  updateProfile: (data: Partial<User>) => void;
+  updateProfile: (data: Partial<User>) => Promise<void>;
   isLoading: boolean;
   isLoggedIn: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users database
-const mockUsers: User[] = [
-  {
-    id: '1',
-    email: 'admin@example.com',
-    name: 'Quản trị viên',
-    phone: '0901234567',
-    address: '123 Nguyễn Huệ, Q1, TP.HCM',
-    role: 'admin',
-    avatar: '',
-    createdAt: new Date('2024-01-01'),
-  },
-  {
-    id: '3',
-    email: 'user@example.com',
-    name: 'Nguyễn Văn An',
-    phone: '0903456789',
-    address: '789 Trần Hưng Đạo, Q1, TP.HCM',
-    role: 'customer',
-    avatar: '',
-    createdAt: new Date('2024-01-03'),
-  },
-];
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved user in localStorage
+    // Check for saved user and token in localStorage
     const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      const user = JSON.parse(savedUser);
-      user.createdAt = new Date(user.createdAt);
-      setUser(user);
+    const token = localStorage.getItem('token');
+    
+    console.log('AuthContext useEffect - checking localStorage:', { savedUser: !!savedUser, token: !!token });
+    
+    if (savedUser && token) {
+      try {
+        const userData = JSON.parse(savedUser);
+        userData.createdAt = new Date(userData.createdAt);
+        setUser(userData);
+        console.log('AuthContext - user loaded from localStorage:', userData);
+        
+        // Verify token is still valid by fetching profile
+        usersAPI.getProfile().then(profile => {
+          console.log('AuthContext - token verified, profile:', profile);
+        }).catch((error) => {
+          console.error('AuthContext - token invalid:', error);
+          // Token is invalid, clear storage
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        }).finally(() => {
+          setIsLoading(false);
+        });
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
+    } else {
+      console.log('AuthContext - no saved user or token found');
     }
     setIsLoading(false);
   }, []);
@@ -55,67 +58,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     
-    // Mock login validation
-    const foundUser = mockUsers.find(u => u.email === email);
-    
-    // Mock password validation (in real app, this would be hashed)
-    const validPasswords: Record<string, string> = {
-      'admin@example.com': 'Admin@1234',
-      'user@example.com': 'User@1234',
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-
-    if (foundUser && validPasswords[email] === password) {
-      setUser(foundUser);
-      localStorage.setItem('user', JSON.stringify(foundUser));
+    try {
+      const data = await authAPI.login(email, password);
+      
+      // Save token to localStorage
+      localStorage.setItem('token', data.access_token);
+      
+      // Get user profile after successful login
+      const userProfile = await usersAPI.getProfile();
+      
+      setUser(userProfile);
+      localStorage.setItem('user', JSON.stringify(userProfile));
       setIsLoading(false);
       return true;
+    } catch (error) {
+      console.error('Login failed:', error);
+      setIsLoading(false);
+      return false;
     }
-    
-    setIsLoading(false);
-    return false;
   };
 
   const register = async (email: string, password: string, name: string, phone: string): Promise<boolean> => {
     setIsLoading(true);
     
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-    
-    // Check if user already exists
-    if (mockUsers.find(u => u.email === email)) {
+    try {
+      const data = await authAPI.register({
+        email,
+        password,
+        name,
+        phone,
+      });
+      
+      // Save token to localStorage
+      localStorage.setItem('token', data.access_token);
+      
+      // Get user profile after successful registration
+      const userProfile = await usersAPI.getProfile();
+      
+      setUser(userProfile);
+      localStorage.setItem('user', JSON.stringify(userProfile));
       setIsLoading(false);
-      return false;
+      return true;
+    } catch (error) {
+      console.error('Registration failed:', error);
+      setIsLoading(false);
+      throw error; // Re-throw the error to be handled by the component
     }
-
-    const newUser: User = {
-      id: Date.now().toString(),
-      email,
-      name,
-      phone,
-      address: '',
-      role: 'customer',
-      avatar: '',
-      createdAt: new Date(),
-    };
-
-    mockUsers.push(newUser);
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    setIsLoading(false);
-    return true;
   };
 
   const logout = () => {
+    authAPI.logout();
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
   };
 
-  const updateProfile = (data: Partial<User>) => {
+  const updateProfile = async (data: Partial<User>) => {
     if (user) {
-      const updatedUser = { ...user, ...data };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      try {
+        const updatedUser = await usersAPI.updateProfile(data);
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } catch (error) {
+        console.error('Profile update failed:', error);
+        throw error;
+      }
     }
   };
 

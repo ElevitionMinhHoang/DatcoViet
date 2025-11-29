@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xóa giỏ hàng</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        button {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #c82333;
+        }
+        .info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Xóa giỏ hàng trong localStorage</h1>
+    
+    <div class="info">
+        <p><strong>Vấn đề:</strong> Tài khoản nào cũng tự động có "Mâm cỗ gia đình truyền thống" trong giỏ hàng</p>
+        <p><strong>Giải pháp:</strong> Xóa dữ liệu giỏ hàng cũ trong localStorage</p>
+    </div>
+
+    <div>
+        <button onclick="clearCart()">Xóa giỏ hàng</button>
+        <button onclick="checkCart()">Kiểm tra giỏ hàng</button>
+    </div>
+
+    <div id="result" style="margin-top: 20px;"></div>
+
+    <script>
+        function clearCart() {
+            localStorage.removeItem('cart');
+            document.getElementById('result').innerHTML = 
+                '<p style="color: green;">✅ Đã xóa giỏ hàng thành công!</p>' +
+                '<p>Bây giờ hãy quay lại ứng dụng và tải lại trang.</p>';
+        }
+
+        function checkCart() {
+            const cart = localStorage.getItem('cart');
+            if (cart) {
+                try {
+                    const cartData = JSON.parse(cart);
+                    document.getElementById('result').innerHTML = 
+                        '<p style="color: orange;">📦 Giỏ hàng hiện tại:</p>' +
+                        '<pre>' + JSON.stringify(cartData, null, 2) + '</pre>' +
+                        '<p>Số lượng sản phẩm: ' + cartData.length + '</p>';
+                } catch (e) {
+                    document.getElementById('result').innerHTML = 
+                        '<p style="color: red;">❌ Lỗi khi đọc giỏ hàng: ' + e.message + '</p>';
+                }
+            } else {
+                document.getElementById('result').innerHTML = 
+                    '<p style="color: green;">✅ Giỏ hàng đang trống!</p>';
+            }
+        }
+
+        // Tự động kiểm tra giỏ hàng khi trang tải
+        checkCart();
+    </script>
+</body>
+</html>

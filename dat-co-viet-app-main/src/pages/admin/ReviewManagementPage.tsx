@@ -1,19 +1,49 @@
-import AdminLayout from "@/components/layout/AdminLayout";
-import { Search, Filter, CheckCircle, XCircle, Clock, Eye, MessageSquare } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, CheckCircle, XCircle, Clock, Eye, MessageSquare, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { reviews } from "@/data/mockData";
-import { useState } from "react";
+import api from '@/services/api';
+
+interface Review {
+  id: string;
+  orderId: string;
+  customerId: string;
+  customerName: string;
+  rating: number;
+  comment: string;
+  images?: string[];
+  status: string;
+  createdAt: Date;
+  approvedAt?: Date;
+}
 
 const ReviewManagementPage = () => {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setLoading(true);
+        const data = await api.feedback.getFeedback();
+        setReviews(data);
+      } catch (error) {
+        console.error('Failed to fetch reviews:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, []);
+
   const filteredReviews = reviews.filter(review => {
-    const matchesSearch = review.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.comment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.orderId.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = review.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         review.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         review.orderId?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || review.status === statusFilter;
     
@@ -22,21 +52,21 @@ const ReviewManagementPage = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'approved':
+      case 'APPROVED':
         return (
           <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
             <CheckCircle className="w-3 h-3 mr-1" />
             Đã duyệt
           </Badge>
         );
-      case 'pending':
+      case 'PENDING':
         return (
           <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
             <Clock className="w-3 h-3 mr-1" />
             Chờ duyệt
           </Badge>
         );
-      case 'rejected':
+      case 'REJECTED':
         return (
           <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
             <XCircle className="w-3 h-3 mr-1" />
@@ -48,16 +78,36 @@ const ReviewManagementPage = () => {
     }
   };
 
-  const handleApprove = (reviewId: string) => {
-    // In a real app, this would update the review status via API
-    console.log("Approve review:", reviewId);
-    alert(`Đã duyệt đánh giá ${reviewId}`);
+  const handleApprove = async (reviewId: string) => {
+    try {
+      // TODO: Add approve API endpoint
+      // await api.feedback.approveFeedback(reviewId);
+      setReviews(prev =>
+        prev.map(review =>
+          review.id === reviewId ? { ...review, status: 'APPROVED' } : review
+        )
+      );
+      alert(`Đã duyệt đánh giá ${reviewId}`);
+    } catch (error) {
+      console.error('Failed to approve review:', error);
+      alert('Có lỗi xảy ra khi duyệt đánh giá');
+    }
   };
 
-  const handleReject = (reviewId: string) => {
-    // In a real app, this would update the review status via API
-    console.log("Reject review:", reviewId);
-    alert(`Đã từ chối đánh giá ${reviewId}`);
+  const handleReject = async (reviewId: string) => {
+    try {
+      // TODO: Add reject API endpoint
+      // await api.feedback.rejectFeedback(reviewId);
+      setReviews(prev =>
+        prev.map(review =>
+          review.id === reviewId ? { ...review, status: 'REJECTED' } : review
+        )
+      );
+      alert(`Đã từ chối đánh giá ${reviewId}`);
+    } catch (error) {
+      console.error('Failed to reject review:', error);
+      alert('Có lỗi xảy ra khi từ chối đánh giá');
+    }
   };
 
   const handleViewOrder = (orderId: string) => {
@@ -66,11 +116,38 @@ const ReviewManagementPage = () => {
     alert(`Xem chi tiết đơn hàng ${orderId}`);
   };
 
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }).map((_, index) => (
+      <Star
+        key={index}
+        className={`w-4 h-4 ${
+          index < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+        }`}
+      />
+    ));
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Đang tải dữ liệu...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <AdminLayout title="Quản lý đánh giá">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Quản lý đánh giá</h1>
+          <div className="text-sm text-muted-foreground">
+            Tổng cộng: {reviews.length} đánh giá
+          </div>
         </div>
 
         {/* Filters and Search */}
@@ -79,7 +156,7 @@ const ReviewManagementPage = () => {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="Tìm kiếm đánh giá..."
+                placeholder="Tìm kiếm đánh giá theo tên khách hàng, nội dung hoặc mã đơn hàng..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -100,25 +177,25 @@ const ReviewManagementPage = () => {
               Tất cả ({reviews.length})
             </Button>
             <Button 
-              variant={statusFilter === "pending" ? "default" : "outline"} 
+              variant={statusFilter === "PENDING" ? "default" : "outline"} 
               size="sm"
-              onClick={() => setStatusFilter("pending")}
+              onClick={() => setStatusFilter("PENDING")}
             >
-              Chờ duyệt ({reviews.filter(r => r.status === 'pending').length})
+              Chờ duyệt ({reviews.filter(r => r.status === 'PENDING').length})
             </Button>
             <Button 
-              variant={statusFilter === "approved" ? "default" : "outline"} 
+              variant={statusFilter === "APPROVED" ? "default" : "outline"} 
               size="sm"
-              onClick={() => setStatusFilter("approved")}
+              onClick={() => setStatusFilter("APPROVED")}
             >
-              Đã duyệt ({reviews.filter(r => r.status === 'approved').length})
+              Đã duyệt ({reviews.filter(r => r.status === 'APPROVED').length})
             </Button>
             <Button 
-              variant={statusFilter === "rejected" ? "default" : "outline"} 
+              variant={statusFilter === "REJECTED" ? "default" : "outline"} 
               size="sm"
-              onClick={() => setStatusFilter("rejected")}
+              onClick={() => setStatusFilter("REJECTED")}
             >
-              Đã từ chối ({reviews.filter(r => r.status === 'rejected').length})
+              Đã từ chối ({reviews.filter(r => r.status === 'REJECTED').length})
             </Button>
           </div>
         </div>
@@ -139,88 +216,92 @@ const ReviewManagementPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredReviews.map((review) => (
-                  <tr key={review.id} className="border-b">
-                    <td className="py-3 px-4 font-mono">#{review.id}</td>
-                    <td className="py-3 px-4">
-                      <div>
-                        <div className="font-medium">{review.customerName}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {Array.from({ length: review.rating })
-                            .map((_, i) => '⭐')
-                            .join('')}
+                {filteredReviews.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                      {searchTerm || statusFilter !== 'all' 
+                        ? 'Không tìm thấy đánh giá nào phù hợp' 
+                        : 'Chưa có đánh giá nào từ khách hàng'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredReviews.map((review) => (
+                    <tr key={review.id} className="border-b hover:bg-muted/50">
+                      <td className="py-3 px-4 font-mono">#{review.id}</td>
+                      <td className="py-3 px-4">
+                        <div>
+                          <div className="font-medium">{review.customerName}</div>
+                          <div className="flex items-center gap-1 mt-1">
+                            {renderStars(review.rating)}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 font-mono">#{review.orderId}</td>
-                    <td className="py-3 px-4">
-                      <div className="max-w-xs">
-                        <p className="text-sm line-clamp-2">{review.comment}</p>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      {getStatusBadge(review.status)}
-                    </td>
-                    <td className="py-3 px-4">
-                      {review.createdAt.toLocaleDateString('vi-VN')}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewOrder(review.orderId)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {review.status === 'pending' && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-green-600 border-green-200 hover:bg-green-50"
-                              onClick={() => handleApprove(review.id)}
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 border-red-200 hover:bg-red-50"
-                              onClick={() => handleReject(review.id)}
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                        {review.status === 'approved' && review.adminResponse && (
+                      </td>
+                      <td className="py-3 px-4 font-mono">#{review.orderId}</td>
+                      <td className="py-3 px-4">
+                        <div className="max-w-xs">
+                          <p className="text-sm line-clamp-2">{review.comment}</p>
+                          {review.images && review.images.length > 0 && (
+                            <div className="flex gap-1 mt-2">
+                              {review.images.slice(0, 3).map((image, index) => (
+                                <img
+                                  key={index}
+                                  src={image}
+                                  alt={`Review image ${index + 1}`}
+                                  className="w-8 h-8 rounded object-cover"
+                                />
+                              ))}
+                              {review.images.length > 3 && (
+                                <div className="w-8 h-8 bg-muted rounded flex items-center justify-center text-xs">
+                                  +{review.images.length - 3}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {getStatusBadge(review.status)}
+                      </td>
+                      <td className="py-3 px-4">
+                        {formatDate(review.createdAt)}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex gap-2 justify-end">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => alert(`Phản hồi: ${review.adminResponse}`)}
+                            onClick={() => handleViewOrder(review.orderId)}
                           >
-                            <MessageSquare className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
                           </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {review.status === 'PENDING' && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-green-600 border-green-200 hover:bg-green-50"
+                                onClick={() => handleApprove(review.id)}
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                onClick={() => handleReject(review.id)}
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-
-          {filteredReviews.length === 0 && (
-            <div className="text-center py-8">
-              <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Không có đánh giá nào</h3>
-              <p className="text-muted-foreground">
-                {searchTerm || statusFilter !== 'all' 
-                  ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm' 
-                  : 'Chưa có đánh giá nào từ khách hàng'}
-              </p>
-            </div>
-          )}
 
           <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
@@ -233,7 +314,6 @@ const ReviewManagementPage = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

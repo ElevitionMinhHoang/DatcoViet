@@ -14,8 +14,8 @@ import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { Role } from '@prisma/client';
-import { Request } from 'express';
+// import { Role } from '@prisma/client';
+import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('feedback')
@@ -30,12 +30,15 @@ export class FeedbackController {
   @ApiResponse({ status: 201, description: 'Feedback successfully submitted.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   create(@Body() createFeedbackDto: CreateFeedbackDto, @Req() req: Request) {
-    return this.feedbackService.create(createFeedbackDto, req.user['userId']);
+    if (!req.user) {
+      throw new Error('User not authenticated');
+    }
+    return this.feedbackService.create(createFeedbackDto, req.user.userId);
   }
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER, Role.CSKH)
+  @Roles('ADMIN', 'MANAGER', 'CSKH')
   @ApiOperation({ summary: 'Get all feedback (for admin/staff)' })
   @ApiResponse({ status: 200, description: 'Feedback successfully retrieved.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -66,7 +69,7 @@ export class FeedbackController {
 
   @Patch(':id/approve')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER, Role.CSKH)
+  @Roles('ADMIN', 'MANAGER', 'CSKH')
   @ApiOperation({ summary: 'Approve a feedback' })
   @ApiResponse({ status: 200, description: 'Feedback successfully approved.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -74,5 +77,25 @@ export class FeedbackController {
   @ApiResponse({ status: 404, description: 'Feedback not found.' })
   approve(@Param('id', ParseIntPipe) id: number) {
     return this.feedbackService.approve(id);
+  }
+
+  @Patch(':id/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'MANAGER', 'CSKH')
+  @ApiOperation({ summary: 'Reject a feedback' })
+  @ApiResponse({ status: 200, description: 'Feedback successfully rejected.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 404, description: 'Feedback not found.' })
+  reject(@Param('id', ParseIntPipe) id: number) {
+    return this.feedbackService.reject(id);
+  }
+
+  @Get('menu/:menuId')
+  @ApiOperation({ summary: 'Get feedback for a specific menu item' })
+  @ApiResponse({ status: 200, description: 'Feedback successfully retrieved.' })
+  @ApiResponse({ status: 404, description: 'No feedback found for this menu item.' })
+  findByMenu(@Param('menuId', ParseIntPipe) menuId: number) {
+    return this.feedbackService.findByMenu(menuId);
   }
 }

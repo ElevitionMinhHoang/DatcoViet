@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Layout } from "@/components/layout/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -129,8 +128,7 @@ export default function DrinksPage() {
   );
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Đồ Uống
@@ -206,6 +204,5 @@ export default function DrinksPage() {
           </div>
         )}
       </div>
-    </Layout>
   );
 }

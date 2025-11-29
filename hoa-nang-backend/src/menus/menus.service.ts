@@ -16,6 +16,28 @@ export class MenusService {
     return this.prisma.menu.findMany({ where: { isActive: true } });
   }
 
+  async search(query: string): Promise<Menu[]> {
+    return this.prisma.menu.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          {
+            name: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            category: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      },
+    });
+  }
+
   async findOne(id: number): Promise<Menu | null> {
     return this.prisma.menu.findUnique({ where: { id } });
   }

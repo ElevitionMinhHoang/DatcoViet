@@ -1,4 +1,5 @@
-import { Search, ShoppingCart, User, Menu, LogOut, Settings, MessageSquare } from "lucide-react";
+import { ShoppingCart, User, Menu, LogOut, Settings, MessageSquare } from "lucide-react";
+import { SearchBar } from "./SearchBar";
 import { NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,21 +22,14 @@ interface HeaderProps {
   onProfileClick: () => void;
   onCartClick: () => void;
   onSettingsClick: () => void;
+  isAdminRoute?: boolean;
 }
 
-import { useState } from "react";
-export function Header({ onMenuClick, onProfileClick, onCartClick, onSettingsClick }: HeaderProps) {
+export function Header({ onMenuClick, onProfileClick, onCartClick, onSettingsClick, isAdminRoute = false }: HeaderProps) {
   const { user, logout, isLoggedIn } = useAuth();
   const { unreadCount } = useChat();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${searchQuery.trim()}`);
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -48,9 +42,11 @@ export function Header({ onMenuClick, onProfileClick, onCartClick, onSettingsCli
         <div className="flex items-center justify-between gap-4">
           {/* Menu Button & Logo */}
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={onMenuClick} className="md:hidden">
-              <Menu className="w-5 h-5" />
-            </Button>
+            {!isAdminRoute && (
+              <Button variant="ghost" size="icon" onClick={onMenuClick} className="md:hidden">
+                <Menu className="w-5 h-5" />
+              </Button>
+            )}
             <NavLink to="/" className="flex items-center gap-2">
               <img
                 src="/images/Logo.png"
@@ -64,44 +60,46 @@ export function Header({ onMenuClick, onProfileClick, onCartClick, onSettingsCli
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex">
-            <DesktopNav />
-          </div>
+          {!isAdminRoute && (
+            <div className="hidden md:flex">
+              <DesktopNav />
+            </div>
+          )}
 
           {/* Search Bar */}
-          <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md relative hidden md:flex">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Tìm mâm cỗ, món ăn..."
-              className="pl-10 bg-muted/50"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </form>
+          {!isAdminRoute && (
+            <div className="flex-1 max-w-md hidden md:flex">
+              <SearchBar variant="compact" />
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={onCartClick}>
-              <ShoppingCart className="w-5 h-5" />
-            </Button>
-            
-            {isLoggedIn && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative"
-                onClick={() => navigate("/profile", { state: { tab: "chat" } })}
-              >
-                <MessageSquare className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+            {!isAdminRoute && (
+              <>
+                <Button variant="ghost" size="icon" onClick={onCartClick}>
+                  <ShoppingCart className="w-5 h-5" />
+                </Button>
+                
+                {isLoggedIn && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative"
+                    onClick={() => navigate("/profile", { state: { tab: "chat" } })}
                   >
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Badge>
+                    <MessageSquare className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                      >
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </Badge>
+                    )}
+                  </Button>
                 )}
-              </Button>
+              </>
             )}
             
             {isLoggedIn ? (
@@ -128,24 +126,28 @@ export function Header({ onMenuClick, onProfileClick, onCartClick, onSettingsCli
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onProfileClick}>
-                    <User className="w-4 h-4 mr-2" />
-                    <span>Hồ sơ</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/profile", { state: { tab: "chat" } })}>
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    <span>Tin nhắn</span>
-                    {unreadCount > 0 && (
-                      <Badge variant="destructive" className="ml-auto">
-                        {unreadCount}
-                      </Badge>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onSettingsClick}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    <span>Cài đặt</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  {!isAdminRoute && (
+                    <>
+                      <DropdownMenuItem onClick={onProfileClick}>
+                        <User className="w-4 h-4 mr-2" />
+                        <span>Hồ sơ</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/profile", { state: { tab: "chat" } })}>
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        <span>Tin nhắn</span>
+                        {unreadCount > 0 && (
+                          <Badge variant="destructive" className="ml-auto">
+                            {unreadCount}
+                          </Badge>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={onSettingsClick}>
+                        <Settings className="w-4 h-4 mr-2" />
+                        <span>Cài đặt</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
                     <LogOut className="w-4 h-4 mr-2" />
                     <span>Đăng xuất</span>

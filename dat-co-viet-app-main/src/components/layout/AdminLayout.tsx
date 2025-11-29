@@ -1,197 +1,178 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import {
-  Users,
-  Package,
-  Utensils,
-  ChefHat,
-  MessageSquare,
-  BarChart3,
-  Menu,
-  X,
-  Bell,
-  LogOut,
-  User,
-  Star
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Users, Package, ChefHat, MessageSquare, Star, BarChart3, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  title: string;
 }
 
-const AdminLayout = ({ children, title }: AdminLayoutProps) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
+  // Force close any mobile overlays when entering admin layout
+  useEffect(() => {
+    // This ensures any mobile menu overlays are closed when admin layout mounts
+    const body = document.body;
+    body.style.overflow = 'auto';
+    body.style.position = 'static';
+    
+    // Remove any potential overlay classes - more comprehensive approach
+    const overlaySelectors = [
+      '.fixed.inset-0.z-40',
+      '.fixed.inset-0.z-50',
+      '[data-overlay="true"]',
+      '.backdrop-blur-sm',
+      '[class*="bg-black"]'
+    ];
+    
+    overlaySelectors.forEach(selector => {
+      document.querySelectorAll(selector).forEach(el => {
+        if (el instanceof HTMLElement) {
+          el.style.display = 'none';
+          el.remove();
+        }
+      });
+    });
 
-  const menuItems = [
+    // Also remove any event listeners that might be keeping overlays open
+    const cleanupOverlays = () => {
+      const overlays = document.querySelectorAll('.fixed.inset-0');
+      overlays.forEach(overlay => {
+        if (overlay instanceof HTMLElement &&
+            (overlay.classList.contains('backdrop-blur-sm') ||
+             overlay.style.backgroundColor === 'rgba(0, 0, 0, 0.5)')) {
+          overlay.remove();
+        }
+      });
+    };
+
+    // Run cleanup immediately and after a short delay
+    cleanupOverlays();
+    setTimeout(cleanupOverlays, 100);
+  }, []);
+
+  const adminMenuItems = [
     {
-      title: "Quản lý người dùng",
-      href: "/admin/users",
+      name: "Quản lý người dùng",
+      path: "/admin/users",
       icon: Users,
-      description: "Quản lý tài khoản khách hàng"
+      description: "Quản lý tài khoản người dùng"
     },
     {
-      title: "Quản lý đơn hàng",
-      href: "/admin/orders",
+      name: "Quản lý đơn hàng",
+      path: "/admin/orders",
       icon: Package,
       description: "Xem và xử lý đơn hàng"
     },
     {
-      title: "Quản lý món ăn",
-      href: "/admin/menu",
-      icon: Utensils,
-      description: "Quản lý thực đơn món ăn"
-    },
-    {
-      title: "Quản lý combo",
-      href: "/admin/combos",
+      name: "Quản lý thực đơn",
+      path: "/admin/menu",
       icon: ChefHat,
-      description: "Quản lý gói cỗ và combo"
+      description: "Quản lý món ăn và mâm cỗ"
     },
     {
-      title: "Tin nhắn & Hỗ trợ",
-      href: "/admin/messages",
+      name: "Quản lý tin nhắn",
+      path: "/admin/messages",
       icon: MessageSquare,
-      description: "Quản lý tin nhắn khách hàng"
+      description: "Quản lý tin nhắn liên hệ"
     },
     {
-      title: "Quản lý đánh giá",
-      href: "/admin/reviews",
+      name: "Quản lý đánh giá",
+      path: "/admin/feedback",
       icon: Star,
       description: "Quản lý đánh giá từ khách hàng"
     },
     {
-      title: "Báo cáo & Thống kê",
-      href: "/admin/reports",
+      name: "Báo cáo & Thống kê",
+      path: "/admin/reports",
       icon: BarChart3,
-      description: "Báo cáo doanh thu và thống kê"
+      description: "Xem báo cáo và thống kê"
     }
   ];
 
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Đã đăng xuất",
+      description: "Bạn đã đăng xuất khỏi hệ thống quản trị",
+    });
+    navigate('/auth');
+  };
+
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Mobile Sidebar Overlay */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed left-0 top-0 z-50 h-full w-64 bg-card border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0",
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex h-16 items-center border-b px-6">
-            <div className="flex items-center gap-2">
-              <img
-                src="/images/Logo.png"
-                alt="Hoa Nắng Logo"
-                className="w-10 h-10 object-contain"
-              />
-              <span className="font-bold text-primary">Admin Panel</span>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 p-4">
-            {menuItems.map((item) => (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-all hover:bg-primary/10 hover:text-primary",
-                    isActive
-                      ? "bg-primary/20 text-primary border-r-2 border-primary"
-                      : "text-muted-foreground"
-                  )
-                }
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.title}
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* User Info & Logout */}
-          <div className="border-t p-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user?.name}</p>
-                <p className="text-xs text-muted-foreground truncate">Quản trị viên</p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Đăng xuất
-            </Button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="lg:pl-64">
-        {/* Header */}
-        <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b">
-          <div className="flex h-16 items-center justify-between px-6">
-            <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Simple Admin Header - No user navigation */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden"
-                onClick={() => setIsSidebarOpen(true)}
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               >
-                <Menu className="w-5 h-5" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
               </Button>
-              <h1 className="text-2xl font-semibold">{title}</h1>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Hoa Nắng - Quản trị</h1>
+                <p className="text-sm text-gray-500">Chào mừng quản trị viên</p>
+              </div>
             </div>
-
-            <div className="flex items-center gap-4">
-              {/* Messages Notification */}
-              <Button variant="ghost" size="icon" className="relative">
-                <MessageSquare className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              </Button>
-
-              {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"></span>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{user?.name || user?.email}</p>
+                <p className="text-xs text-gray-500">Quản trị viên</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Đăng xuất
               </Button>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-6">
-          {children}
+      <div className="flex">
+        {/* Admin Sidebar */}
+        {isSidebarOpen && (
+          <aside className="w-64 bg-white shadow-sm border-r min-h-[calc(100vh-80px)]">
+            <nav className="p-4 space-y-2">
+              {adminMenuItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.path}
+                    variant={isActive(item.path) ? "default" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => navigate(item.path)}
+                  >
+                    <Icon className="w-4 h-4 mr-3" />
+                    {item.name}
+                  </Button>
+                );
+              })}
+            </nav>
+          </aside>
+        )}
+
+        {/* Main Content */}
+        <main className={`flex-1 ${isSidebarOpen ? '' : 'ml-0'}`}>
+          <div className="p-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>
   );
-};
-
-export default AdminLayout;
+}

@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { MenusService } from './menus.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
@@ -38,7 +39,10 @@ export class MenusController {
   @Get()
   @ApiOperation({ summary: 'Get all active menu items' })
   @ApiResponse({ status: 200, description: 'Menu items successfully retrieved.' })
-  findAll() {
+  findAll(@Query('search') search?: string) {
+    if (search) {
+      return this.menusService.search(search);
+    }
     return this.menusService.findAll();
   }
 

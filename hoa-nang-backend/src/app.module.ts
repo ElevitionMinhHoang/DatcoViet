@@ -9,9 +9,10 @@ import { PaymentsModule } from './payments/payments.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
 import { ReportsModule } from './reports/reports.module';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, MenusModule, OrdersModule, PaymentsModule, FeedbackModule, DeliveriesModule, ReportsModule],
+  imports: [AuthModule, UsersModule, MenusModule, OrdersModule, PaymentsModule, FeedbackModule, DeliveriesModule, ReportsModule, ContactModule],
   controllers: [AppController],
   providers: [AppService],
 })
