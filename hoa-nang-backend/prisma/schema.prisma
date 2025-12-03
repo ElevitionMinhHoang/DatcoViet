@@ -9,20 +9,24 @@ datasource db {
 }
 
 model User {
-  id                  Int        @id @default(autoincrement())
-  email               String     @unique
+  id                  Int           @id @default(autoincrement())
+  email               String        @unique
   password            String
-  role                Role       @default(USER)
-  failedLoginAttempts Int        @default(0)
-  isLocked            Boolean    @default(false)
+  role                Role          @default(USER)
+  failedLoginAttempts Int           @default(0)
+  isLocked            Boolean       @default(false)
   passwordChangedAt   DateTime?
-  passwordChangeCount Int        @default(0)
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  passwordChangeCount Int           @default(0)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
   name                String
   phone               String
+  address             String?
   orders              Order[]
   shipperDeliveries   Delivery[]
+  chatRooms           ChatRoom[]
+  chatMessages        ChatMessage[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Menu {
@@ -135,4 +139,44 @@ model Contact {
   message   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ChatRoom {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  status    ChatStatus @default(ACTIVE)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id])
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  senderId  Int
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  room      ChatRoom @relation(fields: [roomId], references: [id])
+  sender    User     @relation(fields: [senderId], references: [id])
+}
+
+enum ChatStatus {
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
 }

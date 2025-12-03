@@ -10,9 +10,10 @@ import { FeedbackModule } from './feedback/feedback.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
 import { ReportsModule } from './reports/reports.module';
 import { ContactModule } from './contact/contact.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, MenusModule, OrdersModule, PaymentsModule, FeedbackModule, DeliveriesModule, ReportsModule, ContactModule],
+  imports: [AuthModule, UsersModule, MenusModule, OrdersModule, PaymentsModule, FeedbackModule, DeliveriesModule, ReportsModule, ContactModule, ChatModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -5,7 +5,7 @@ export class CreateMenuDto {
   @IsNotEmpty()
   name: string;
 
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @IsNotEmpty()
   price: number;
 

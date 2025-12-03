@@ -62,7 +62,7 @@ export class FeedbackService {
   }
 
   async findAll(): Promise<any[]> {
-    return this.prisma.feedback.findMany({
+    const feedbacks = await this.prisma.feedback.findMany({
       select: {
         id: true,
         orderId: true,
@@ -70,8 +70,64 @@ export class FeedbackService {
         comment: true,
         isApproved: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        order: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            items: {
+              select: {
+                menu: {
+                  select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Transform to match frontend expectations
+    return feedbacks.map((feedback) => {
+      const order = feedback.order;
+      const customerName = order?.user?.name || 'Khách hàng';
+      const customerId = order?.user?.id || 0;
+      // Determine dish name(s)
+      const items = order?.items || [];
+      let dishName = 'Không xác định';
+      if (items.length > 0) {
+        const firstItem = items[0];
+        dishName = firstItem.menu?.name || 'Không xác định';
+        if (items.length > 1) {
+          dishName += ` và ${items.length - 1} món khác`;
+        }
       }
+
+      return {
+        id: feedback.id,
+        orderId: feedback.orderId,
+        customerId,
+        customerName,
+        rating: feedback.rating,
+        comment: feedback.comment,
+        images: [], // Temporary empty array until migration completes
+        status: feedback.isApproved ? 'approved' : 'pending',
+        createdAt: feedback.createdAt,
+        approvedAt: feedback.isApproved ? feedback.updatedAt : undefined,
+        dishName,
+      };
     });
   }
 
@@ -111,19 +167,19 @@ export class FeedbackService {
   }
 
 
-  async approve(id: number): Promise<any> {
+  async remove(id: number): Promise<any> {
     await this.findOne(id);
-    return this.prisma.feedback.update({
+    return this.prisma.feedback.delete({
       where: { id },
-      data: { isApproved: true },
-    });
-  }
-
-  async reject(id: number): Promise<any> {
-    await this.findOne(id);
-    return this.prisma.feedback.update({
-      where: { id },
-      data: { isApproved: false },
+      select: {
+        id: true,
+        orderId: true,
+        rating: true,
+        comment: true,
+        isApproved: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
   }
 

@@ -57,6 +57,18 @@ export class UsersController {
     return this.usersService.findOneAdmin(+id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiResponse({ status: 200, description: 'User profile successfully updated.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  updateProfile(@Req() req: Request, @Body() updateUserDto: any) {
+    if (!req.user) {
+      throw new Error('User not authenticated');
+    }
+    return this.usersService.update(req.user.userId, updateUserDto);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id')

@@ -170,6 +170,7 @@ export class UsersService {
           name: true,
           email: true,
           phone: true,
+          address: true,
           role: true,
           createdAt: true,
           updatedAt: true,

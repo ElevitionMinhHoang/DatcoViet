@@ -67,28 +67,16 @@ export class FeedbackController {
     return this.feedbackService.findByOrder(orderId);
   }
 
-  @Patch(':id/approve')
+  @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER', 'CSKH')
-  @ApiOperation({ summary: 'Approve a feedback' })
-  @ApiResponse({ status: 200, description: 'Feedback successfully approved.' })
+  @ApiOperation({ summary: 'Delete a feedback' })
+  @ApiResponse({ status: 200, description: 'Feedback successfully deleted.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Feedback not found.' })
-  approve(@Param('id', ParseIntPipe) id: number) {
-    return this.feedbackService.approve(id);
-  }
-
-  @Patch(':id/reject')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'MANAGER', 'CSKH')
-  @ApiOperation({ summary: 'Reject a feedback' })
-  @ApiResponse({ status: 200, description: 'Feedback successfully rejected.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 403, description: 'Forbidden.' })
-  @ApiResponse({ status: 404, description: 'Feedback not found.' })
-  reject(@Param('id', ParseIntPipe) id: number) {
-    return this.feedbackService.reject(id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.feedbackService.remove(id);
   }
 
   @Get('menu/:menuId')
