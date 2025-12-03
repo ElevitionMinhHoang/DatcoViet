@@ -107,9 +107,32 @@ const Index = () => {
     }
   };
 
-  const filteredDishes = selectedCategory === "Tất cả"
-    ? dishes.filter(dish => dish.isAvailable).slice(0, 6) // Show only 6 popular dishes on homepage
-    : dishes.filter(dish => dish.category === selectedCategory && dish.isAvailable);
+const FOOD_CATEGORIES = [
+  "Khai vị",
+  "Món chính",
+  "Món phụ",
+  "Tráng miệng",
+  "Đồ uống",
+  "Đồ Uống",
+  "Món lẻ",
+];
+
+const filteredDishes =
+  selectedCategory === "Tất cả"
+    ? dishes.filter(dish => dish.isAvailable).slice(0, 6)
+    : selectedCategory === "Mâm Cỗ"
+      ? dishes.filter(
+          dish =>
+            dish.category === "Mâm Cỗ" &&
+            dish.isAvailable
+        )
+      : selectedCategory === "Món Ăn"
+        ? dishes.filter(
+            dish =>
+              FOOD_CATEGORIES.includes(dish.category) &&
+              dish.isAvailable
+          )
+        : [];
 
   const handleViewDetails = (id: string, category: string) => {
     // Check if it's a feast set (IDs 37-41) or individual dish
@@ -169,13 +192,14 @@ const Index = () => {
                 </Button>
                 {!user && (
                   <Button
-                    variant="outline"
-                    size="lg"
-                    className="text-white border-white hover:bg-white hover:text-primary"
-                    onClick={handleAuth}
-                  >
-                    Đăng nhập
-                  </Button>
+  variant="secondary"
+  size="lg"
+  className="bg-white text-primary border border-white hover:bg-muted"
+  onClick={handleAuth}
+>
+  Đăng nhập
+</Button>
+
                 )}
               </div>
             </div>
