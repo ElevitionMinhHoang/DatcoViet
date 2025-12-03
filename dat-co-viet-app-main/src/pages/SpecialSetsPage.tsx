@@ -23,13 +23,10 @@ export default function SpecialSetsPage() {
   useEffect(() => {
     const loadFeastSets = async () => {
       try {
-        // Load all menus and filter for feast sets (IDs 37-41)
+        // Load all menus and filter for feast sets by category "Mâm Cỗ"
         const menusData = await menusAPI.getAllMenus();
         const feastSetsData = menusData
-          .filter(menu => {
-            const menuId = Number(menu.id);
-            return menuId >= 37 && menuId <= 41; // Feast set IDs
-          })
+          .filter(menu => menu.category === "Mâm Cỗ")
           .map(menu => ({
             id: menu.id,
             name: menu.name,

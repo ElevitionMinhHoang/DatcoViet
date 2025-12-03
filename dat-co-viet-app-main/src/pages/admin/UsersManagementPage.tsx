@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, Filter, Mail, Phone, Calendar, Package, DollarSign, Clock } from "lucide-react";
+import { Users, Search, Mail, Phone, Calendar, Package, DollarSign, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +57,8 @@ const UsersManagementPage = () => {
   const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -86,6 +88,8 @@ const UsersManagementPage = () => {
       );
       setFilteredUsers(filtered);
     }
+    // Reset to first page when search changes
+    setCurrentPage(1);
   }, [searchTerm, users]);
 
   const getRoleLabel = (role: string) => {
@@ -195,10 +199,6 @@ const UsersManagementPage = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Lọc
-          </Button>
         </div>
       </div>
 
@@ -224,61 +224,66 @@ const UsersManagementPage = () => {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => (
-                  <tr key={user.id} className="border-b hover:bg-muted/50">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                          <Users className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{user.name || 'Chưa có tên'}</div>
-                          <div className="text-sm text-muted-foreground">ID: {user.id}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm">{user.email}</span>
-                        </div>
-                        {user.phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm">{user.phone}</span>
+                (() => {
+                  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+                  return paginatedUsers.map((user) => (
+                    <tr key={user.id} className="border-b hover:bg-muted/50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                            <Users className="w-5 h-5" />
                           </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant={getRoleVariant(user.role)}>
-                        {getRoleLabel(user.role)}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span>{formatDate(user.createdAt)}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="font-medium">{user.orderCount} đơn</span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewDetails(user.id)}
-                          disabled={detailLoading}
-                        >
-                          {detailLoading ? 'Đang tải...' : 'Xem chi tiết'}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          <div>
+                            <div className="font-medium">{user.name || 'Chưa có tên'}</div>
+                            <div className="text-sm text-muted-foreground">ID: {user.id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm">{user.email}</span>
+                          </div>
+                          {user.phone && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm">{user.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant={getRoleVariant(user.role)}>
+                          {getRoleLabel(user.role)}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
+                          <span>{formatDate(user.createdAt)}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="font-medium">{user.orderCount} đơn</span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewDetails(user.id)}
+                            disabled={detailLoading}
+                          >
+                            {detailLoading ? 'Đang tải...' : 'Xem chi tiết'}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ));
+                })()
               )}
             </tbody>
           </table>
@@ -286,11 +291,33 @@ const UsersManagementPage = () => {
         
         <div className="mt-6 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Hiển thị {filteredUsers.length} trên {users.length} người dùng
+            {(() => {
+              const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+              const startIndex = (currentPage - 1) * itemsPerPage;
+              const endIndex = Math.min(startIndex + itemsPerPage, filteredUsers.length);
+              return `Hiển thị ${startIndex + 1}-${endIndex} trên ${filteredUsers.length} người dùng`;
+            })()}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">Trước</Button>
-            <Button variant="outline" size="sm">Sau</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Trước
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+                setCurrentPage(prev => Math.min(prev + 1, totalPages));
+              }}
+              disabled={currentPage >= Math.ceil(filteredUsers.length / itemsPerPage)}
+            >
+              Sau
+            </Button>
           </div>
         </div>
       </div>

@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
 
 interface EditProfileModalProps {
@@ -19,13 +20,40 @@ interface EditProfileModalProps {
 
 export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => {
   const { user, updateProfile } = useAuth();
+  const { toast } = useToast();
   const [name, setName] = useState(user?.name || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [address, setAddress] = useState(user?.address || "");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = () => {
-    updateProfile({ name, phone, address });
-    onClose();
+  const handleSave = async () => {
+    if (!name.trim() || !phone.trim()) {
+      toast({
+        title: "Thiếu thông tin",
+        description: "Vui lòng điền đầy đủ tên và số điện thoại.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await updateProfile({ name, phone, address });
+      toast({
+        title: "Cập nhật thành công",
+        description: "Thông tin cá nhân đã được lưu.",
+      });
+      onClose();
+    } catch (error: any) {
+      console.error("Profile update failed:", error);
+      toast({
+        title: "Cập nhật thất bại",
+        description: error?.message || "Không thể lưu thay đổi. Vui lòng thử lại.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -44,6 +72,7 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="col-span-3"
+              disabled={isLoading}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -55,6 +84,7 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="col-span-3"
+              disabled={isLoading}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -66,14 +96,19 @@ export const EditProfileModal = ({ isOpen, onClose }: EditProfileModalProps) => 
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               className="col-span-3"
+              disabled={isLoading}
             />
           </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Hủy</Button>
+            <Button variant="outline" disabled={isLoading}>
+              Hủy
+            </Button>
           </DialogClose>
-          <Button onClick={handleSave}>Lưu thay đổi</Button>
+          <Button onClick={handleSave} disabled={isLoading}>
+            {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

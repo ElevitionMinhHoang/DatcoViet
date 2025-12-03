@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Star, Users, Clock, Plus, Minus, ShoppingCart } from "lucide-react";
 import ReviewsSection from "@/components/ReviewsSection";
-import { menusAPI } from "@/services/api";
+import { feastSetsAPI, feedbackAPI } from "@/services/api";
 import { FeastSet, Review } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,29 +33,18 @@ export default function SetDetailPage() {
       
       setIsLoading(true);
       try {
-        // For now, treat feast sets as regular menu items
-        // In the future, we should have a separate API for feast sets
-        const menuData = await menusAPI.getMenuById(id);
-        
-        // Convert menu item to feast set format
-        const feastSetData: FeastSet = {
-          id: menuData.id,
-          name: menuData.name,
-          description: menuData.description,
-          image: menuData.image,
-          price: menuData.price,
-          dishes: [], // Empty for now, as backend doesn't support feast set details
-          servings: 4, // Default servings
-          category: menuData.category,
-          isPopular: true,
-          rating: 4.8,
-          reviewCount: 0,
-          isActive: menuData.isAvailable,
-          tags: [],
-        };
-        
+        // Use feastSetsAPI to get real rating data
+        const feastSetData = await feastSetsAPI.getFeastSetById(id);
         setFeastSet(feastSetData);
-        setFeastSetReviews([]); // Empty reviews for now
+        
+        // Load reviews for this menu item
+        try {
+          const reviews = await feedbackAPI.getFeedbackByMenu(id);
+          setFeastSetReviews(reviews);
+        } catch (reviewError) {
+          console.error('Failed to load reviews:', reviewError);
+          setFeastSetReviews([]);
+        }
       } catch (error) {
         console.error('Failed to load feast set:', error);
         toast({
@@ -113,6 +102,16 @@ export default function SetDetailPage() {
   };
 
   const handleAddToCart = () => {
+    if (!isLoggedIn) {
+      navigate("/auth");
+      toast({
+        title: "Vui lòng đăng nhập",
+        description: "Bạn cần đăng nhập để thêm mâm cỗ vào giỏ hàng",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (feastSet) {
       addToCart(feastSet, quantity);
       toast({
@@ -143,21 +142,24 @@ export default function SetDetailPage() {
       return;
     }
     
-    // Add feast set to cart first
-    if (feastSet) {
-      addToCart(feastSet, quantity);
-      toast({
-        title: "Đã thêm vào giỏ hàng",
-        description: `${feastSet.name} (x${quantity}) đã được thêm vào giỏ hàng`,
-      });
-    }
+    // Create direct order object
+    const directOrder = {
+      dish: feastSet,
+      quantity,
+      totalPrice: feastSet.price * quantity,
+      notes
+    };
     
-    // Redirect to checkout page for logged in users
-    navigate("/checkout");
+    // Redirect to checkout page with direct order state
+    navigate("/checkout", {
+      state: { directOrder }
+    });
   };
 
   const totalPrice = feastSet.price * quantity;
 
+  const averageRating = feastSet.rating?.toFixed(1) ?? '0.0';
+  const reviewCount = feastSet.reviewCount ?? 0;
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -184,9 +186,22 @@ export default function SetDetailPage() {
             </Badge>
           )}
           <div className="absolute top-4 right-4 flex items-center gap-1 bg-background/90 px-3 py-1 rounded-full">
-            <Star className="w-4 h-4 fill-secondary text-secondary" />
-            <span className="font-medium">{feastSet.rating}</span>
-            <span className="text-muted-foreground">({feastSet.reviewCount} đánh giá)</span>
+            {reviewCount === 0 ? (
+              <>
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 text-gray-300" />
+                  ))}
+                </div>
+                <span className="text-muted-foreground text-sm">Chưa có đánh giá</span>
+              </>
+            ) : (
+              <>
+                <Star className="w-4 h-4 fill-secondary text-secondary" />
+                <span className="font-medium">{averageRating}</span>
+                <span className="text-muted-foreground">({reviewCount} đánh giá)</span>
+              </>
+            )}
           </div>
         </div>
 

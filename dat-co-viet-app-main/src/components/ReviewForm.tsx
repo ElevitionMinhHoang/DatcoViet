@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, Upload, X } from "lucide-react";
+import { Star, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { feedbackAPI } from "@/services/api";
 
@@ -16,21 +16,8 @@ const ReviewForm = ({ orderId, onSuccess, onCancel }: ReviewFormProps) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [images, setImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files) {
-      const newImages = Array.from(files).slice(0, 5 - images.length); // Limit to 5 images
-      setImages([...images, ...newImages]);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
-  };
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -45,21 +32,20 @@ const ReviewForm = ({ orderId, onSuccess, onCancel }: ReviewFormProps) => {
     setIsSubmitting(true);
 
     try {
-      // In a real implementation, you would upload images to a storage service first
-      // For now, we'll just store the image names as placeholder
-      const imageUrls = images.map((image) => URL.createObjectURL(image));
-
       await feedbackAPI.createFeedback({
-        orderId: orderId,
+        orderId: orderId.toString(),
         rating,
         comment,
-        images: imageUrls,
+        images: [],
       });
 
       toast({
         title: "Đánh giá thành công",
         description: "Cảm ơn bạn đã đánh giá đơn hàng!",
       });
+
+      // Emit custom event to notify other components (e.g., homepage) that a review was submitted
+      window.dispatchEvent(new CustomEvent('reviewSubmitted'));
 
       onSuccess();
     } catch (error: any) {
@@ -139,59 +125,6 @@ const ReviewForm = ({ orderId, onSuccess, onCancel }: ReviewFormProps) => {
           />
         </div>
 
-        {/* Image Upload */}
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            Hình ảnh đánh giá
-          </label>
-          <div className="space-y-3">
-            {/* Image Preview */}
-            {images.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {images.map((image, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={URL.createObjectURL(image)}
-                      alt={`Review image ${index + 1}`}
-                      className="w-20 h-20 object-cover rounded-lg border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Upload Button */}
-            {images.length < 5 && (
-              <div>
-                <input
-                  type="file"
-                  id="image-upload"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-                <label
-                  htmlFor="image-upload"
-                  className="inline-flex items-center px-4 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Tải lên hình ảnh ({images.length}/5)
-                </label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Tải lên tối đa 5 hình ảnh về món ăn
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Submit Button */}
         <div className="flex justify-end space-x-2 pt-4">

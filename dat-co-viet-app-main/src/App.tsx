@@ -16,10 +16,12 @@ import MenuPage from "./pages/MenuPage";
 import SetDetailPage from "./pages/SetDetailPage";
 import DishDetailPage from "./pages/DishDetailPage";
 import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import ProfilePage from "./pages/ProfilePage";
+import ChatPage from "./pages/ChatPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import SpecialSetsPage from "./pages/SpecialSetsPage";
@@ -61,18 +63,20 @@ const App = () => (
                 <Routes>
                 <Route path="/" element={<Layout><Index /></Layout>} />
                 <Route path="/auth" element={<AuthPage />} />
-              <Route path="/menu" element={<ProtectedRoute><Layout><MenuPage /></Layout></ProtectedRoute>} />
-              <Route path="/menu/sets/:id" element={<ProtectedRoute><Layout><SetDetailPage /></Layout></ProtectedRoute>} />
-              <Route path="/menu/dishes/:id" element={<ProtectedRoute><Layout><DishDetailPage /></Layout></ProtectedRoute>} />
-              <Route path="/about" element={<ProtectedRoute><Layout><AboutPage /></Layout></ProtectedRoute>} />
-              <Route path="/contact" element={<ProtectedRoute><Layout><ContactPage /></Layout></ProtectedRoute>} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/menu" element={<Layout><MenuPage /></Layout>} />
+              <Route path="/menu/sets/:id" element={<Layout><SetDetailPage /></Layout>} />
+              <Route path="/menu/dishes/:id" element={<Layout><DishDetailPage /></Layout>} />
+              <Route path="/about" element={<Layout><AboutPage /></Layout>} />
+              <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
               <Route path="/profile" element={<ProtectedRoute><Layout><ProfilePage /></Layout></ProtectedRoute>} />
-              <Route path="/cart" element={<ProtectedRoute><Layout><CartPage /></Layout></ProtectedRoute>} />
+              <Route path="/chat" element={<ProtectedRoute><Layout><ChatPage /></Layout></ProtectedRoute>} />
+              <Route path="/cart" element={<Layout><CartPage /></Layout>} />
               <Route path="/checkout" element={<ProtectedRoute><Layout><CheckoutPage /></Layout></ProtectedRoute>} />
-              <Route path="/special-sets" element={<ProtectedRoute><Layout><SpecialSetsPage /></Layout></ProtectedRoute>} />
-              <Route path="/individual-dishes" element={<ProtectedRoute><Layout><IndividualDishesPage /></Layout></ProtectedRoute>} />
-              <Route path="/drinks" element={<ProtectedRoute><Layout><DrinksPage /></Layout></ProtectedRoute>} />
-              <Route path="/search" element={<ProtectedRoute><Layout><SearchResultsPage /></Layout></ProtectedRoute>} />
+              <Route path="/special-sets" element={<Layout><SpecialSetsPage /></Layout>} />
+              <Route path="/individual-dishes" element={<Layout><IndividualDishesPage /></Layout>} />
+              <Route path="/drinks" element={<Layout><DrinksPage /></Layout>} />
+              <Route path="/search" element={<Layout><SearchResultsPage /></Layout>} />
               {/* Order management routes */}
               <Route path="/orders" element={<ProtectedRoute><Layout><OrdersPage /></Layout></ProtectedRoute>} />
               <Route path="/delivery" element={<ProtectedRoute><Layout><DeliveryPage /></Layout></ProtectedRoute>} />

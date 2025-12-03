@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, CreditCard, MapPin, Phone, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -13,7 +13,8 @@ import { ordersAPI, paymentsAPI } from "@/services/api";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const location = useLocation();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const { cartItems, totalPrice, clearCart, addToCart } = useCart();
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +25,30 @@ export default function CheckoutPage() {
     notes: ""
   });
   const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [directOrder, setDirectOrder] = useState<any>(null);
+
+  useEffect(() => {
+    // Check if we have a direct order from navigation state
+    console.log('CheckoutPage location.state:', location.state);
+    console.log('Cart items:', cartItems);
+    if (location.state?.directOrder) {
+      console.log('Direct order received:', location.state.directOrder);
+      setDirectOrder(location.state.directOrder);
+    } else {
+      console.log('No direct order in location.state');
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast({
+        title: "Vui lòng đăng nhập",
+        description: "Bạn cần đăng nhập để thanh toán.",
+        variant: "destructive"
+      });
+      navigate("/auth");
+    }
+  }, [authLoading, user, toast, navigate]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -33,7 +58,7 @@ export default function CheckoutPage() {
   };
 
   const shipping = 20000;
-  const total = totalPrice + shipping;
+  const total = directOrder ? directOrder.totalPrice + shipping : totalPrice + shipping;
 
   const handlePlaceOrder = async () => {
     if (!user) {
@@ -55,7 +80,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && !directOrder) {
       toast({
         title: "Giỏ hàng trống",
         description: "Vui lòng thêm sản phẩm vào giỏ hàng trước khi đặt hàng.",
@@ -76,57 +101,82 @@ export default function CheckoutPage() {
     setIsLoading(true);
 
     try {
-      console.log('Cart items:', cartItems);
-      console.log('Cart items IDs:', cartItems.map(item => ({ id: item.item.id, type: typeof item.item.id })));
+      let orderData;
       
-      // Validate cart items before creating order - all active menu IDs from database (10-41)
-      const validMenuIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41];
-      
-      console.log('Valid menu IDs:', validMenuIds);
-      
-      // Filter out invalid items
-      const validCartItems = cartItems.filter(item => {
-        const menuId = Number(item.item.id);
-        const isValid = validMenuIds.includes(menuId);
-        console.log(`Checking item: ${item.item.name} (ID: ${item.item.id}, Number: ${menuId}), Valid: ${isValid}`);
-        if (!isValid) {
-          console.log(`Removing invalid cart item: ${item.item.name} (ID: ${item.item.id})`);
-        }
-        return isValid;
-      });
-
-      console.log('Valid cart items after filtering:', validCartItems);
-      console.log('Valid cart items count:', validCartItems.length);
-
-      if (validCartItems.length === 0) {
-        console.log('All cart items are invalid. Cart items:', cartItems);
-        throw new Error('Giỏ hàng không có món ăn hợp lệ. Vui lòng thêm món ăn từ thực đơn và thử lại.');
-      }
-
-      if (validCartItems.length !== cartItems.length) {
-        console.log(`Cleaned cart: removed ${cartItems.length - validCartItems.length} invalid items`);
-        // Update cart with only valid items
-        clearCart();
-        validCartItems.forEach(item => {
-          addToCart(item.item, item.quantity);
-        });
+      if (directOrder) {
+        // Handle direct order from product detail page
+        console.log('Processing direct order:', directOrder);
         
-        toast({
-          title: "Đã làm sạch giỏ hàng",
-          description: `${cartItems.length - validCartItems.length} món ăn không hợp lệ đã được xóa khỏi giỏ hàng.`,
-          variant: "default"
+        // Validate the direct order menu ID
+        const validMenuIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41];
+        const menuId = Number(directOrder.dish.id);
+        
+        if (!validMenuIds.includes(menuId)) {
+          throw new Error('Món ăn không hợp lệ. Vui lòng chọn món ăn từ thực đơn.');
+        }
+        
+        orderData = {
+          items: [{
+            menuId: menuId,
+            quantity: directOrder.quantity
+          }]
+        };
+        
+        console.log('Direct order data to send:', orderData);
+      } else {
+        // Handle cart order
+        console.log('Cart items:', cartItems);
+        console.log('Cart items IDs:', cartItems.map(item => ({ id: item.item.id, type: typeof item.item.id })));
+        
+        // Validate cart items before creating order - all active menu IDs from database (10-41)
+        const validMenuIds = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41];
+        
+        console.log('Valid menu IDs:', validMenuIds);
+        
+        // Filter out invalid items
+        const validCartItems = cartItems.filter(item => {
+          const menuId = Number(item.item.id);
+          const isValid = validMenuIds.includes(menuId);
+          console.log(`Checking item: ${item.item.name} (ID: ${item.item.id}, Number: ${menuId}), Valid: ${isValid}`);
+          if (!isValid) {
+            console.log(`Removing invalid cart item: ${item.item.name} (ID: ${item.item.id})`);
+          }
+          return isValid;
         });
+
+        console.log('Valid cart items after filtering:', validCartItems);
+        console.log('Valid cart items count:', validCartItems.length);
+
+        if (validCartItems.length === 0) {
+          console.log('All cart items are invalid. Cart items:', cartItems);
+          throw new Error('Giỏ hàng không có món ăn hợp lệ. Vui lòng thêm món ăn từ thực đơn và thử lại.');
+        }
+
+        if (validCartItems.length !== cartItems.length) {
+          console.log(`Cleaned cart: removed ${cartItems.length - validCartItems.length} invalid items`);
+          // Update cart with only valid items
+          clearCart();
+          validCartItems.forEach(item => {
+            addToCart(item.item, item.quantity);
+          });
+          
+          toast({
+            title: "Đã làm sạch giỏ hàng",
+            description: `${cartItems.length - validCartItems.length} món ăn không hợp lệ đã được xóa khỏi giỏ hàng.`,
+            variant: "default"
+          });
+        }
+        
+        orderData = {
+          items: validCartItems.map(item => ({
+            menuId: Number(item.item.id),
+            quantity: item.quantity
+          }))
+        };
+
+        console.log('Cart order data to send:', orderData);
       }
       
-      // Create order
-      const orderData = {
-        items: validCartItems.map(item => ({
-          menuId: Number(item.item.id),
-          quantity: item.quantity
-        }))
-      };
-
-      console.log('Order data to send:', orderData);
       const order = await ordersAPI.createOrder(orderData);
       
       // Create payment
@@ -138,8 +188,10 @@ export default function CheckoutPage() {
 
       const payment = await paymentsAPI.createPayment(paymentData);
 
-      // Clear cart
-      clearCart();
+      // Clear cart only if it was a cart order
+      if (!directOrder) {
+        clearCart();
+      }
 
       toast({
         title: "Đặt hàng thành công",
@@ -172,6 +224,24 @@ export default function CheckoutPage() {
     }));
   };
 
+  // Debug logging
+  console.log('CheckoutPage render - directOrder:', directOrder);
+  console.log('CheckoutPage render - cartItems:', cartItems);
+  console.log('CheckoutPage render - totalPrice:', totalPrice);
+
+  if (authLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-4">Đang tải...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    // Already redirected by useEffect, but just in case render nothing
+    return null;
+  }
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -288,18 +358,36 @@ export default function CheckoutPage() {
                 <div className="space-y-4">
                   {/* Order Items */}
                   <div className="space-y-3">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="space-y-2">
+                    {directOrder ? (
+                      <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="font-medium">{item.item.name}</span>
-                          <span>{formatPrice(item.item.price * item.quantity)}</span>
+                          <span className="font-medium">{directOrder.dish.name}</span>
+                          <span>{formatPrice(directOrder.totalPrice)}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm text-muted-foreground">
-                          <span>Số lượng: x{item.quantity}</span>
-                          <span>{formatPrice(item.item.price)}/phần</span>
+                          <span>Số lượng: x{directOrder.quantity}</span>
+                          <span>{formatPrice(directOrder.dish.price)}/phần</span>
                         </div>
+                        {directOrder.notes && (
+                          <div className="text-sm text-muted-foreground">
+                            <span>Ghi chú: {directOrder.notes}</span>
+                          </div>
+                        )}
                       </div>
-                    ))}
+                    ) : (
+                      cartItems.map((item) => (
+                        <div key={item.id} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{item.item.name}</span>
+                            <span>{formatPrice(item.item.price * item.quantity)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm text-muted-foreground">
+                            <span>Số lượng: x{item.quantity}</span>
+                            <span>{formatPrice(item.item.price)}/phần</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   <Separator />
@@ -308,7 +396,7 @@ export default function CheckoutPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Tạm tính:</span>
-                      <span>{formatPrice(totalPrice)}</span>
+                      <span>{formatPrice(directOrder ? directOrder.totalPrice : totalPrice)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Phí giao hàng:</span>
@@ -326,7 +414,7 @@ export default function CheckoutPage() {
                     size="lg"
                     className="w-full"
                     onClick={handlePlaceOrder}
-                    disabled={user?.role === 'admin' || isLoading || cartItems.length === 0}
+                    disabled={user?.role === 'admin' || isLoading || (cartItems.length === 0 && !directOrder)}
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
                     {isLoading ? 'Đang xử lý...' : user?.role === 'admin' ? 'Không thể đặt hàng' : 'Đặt hàng ngay'}

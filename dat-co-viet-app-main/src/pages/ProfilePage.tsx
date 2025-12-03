@@ -1,11 +1,8 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { useChat } from "@/contexts/ChatContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChatWindow, CompactChatWindow } from "@/components/ChatWindow";
-import { LogOut, User, Mail, Phone, MapPin, Calendar, Utensils, Package, History, Bell, Edit, Users, ChefHat, MessageSquare, BarChart3, Star, MessageCircle, Plus, ShoppingBag, Clock } from "lucide-react";
+import { LogOut, User, Mail, Phone, MapPin, Calendar, Utensils, Package, History, Bell, Edit, Users, ChefHat, BarChart3, Star, ShoppingBag, Clock } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { EditProfileModal } from "@/components/EditProfileModal";
@@ -24,7 +21,6 @@ import {
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();
-  const { conversations, activeConversation, setActiveConversation, createConversation, unreadCount } = useChat();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("profile");
@@ -117,14 +113,6 @@ const ProfilePage = () => {
     );
   }
 
-  const handleStartChat = () => {
-    if (user) {
-      // Create conversation with admin (user ID '1')
-      const conversationId = createConversation([user.id, '1']);
-      setActiveConversation(conversationId);
-      setActiveTab("chat");
-    }
-  };
 
   const handleCancelOrder = (order: any) => {
     setOrderToCancel(order);
@@ -253,15 +241,6 @@ const ProfilePage = () => {
                 <ShoppingBag className="w-4 h-4 mr-2" />
                 Lịch sử mua hàng
               </TabsTrigger>
-              <TabsTrigger value="chat">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Hỗ trợ trực tuyến
-                {unreadCount > 0 && (
-                  <Badge variant="destructive" className="ml-2">
-                    {unreadCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
               {user?.role === 'admin' && (
                 <TabsTrigger value="admin">
                   <ChefHat className="w-4 h-4 mr-2" />
@@ -322,7 +301,7 @@ const ProfilePage = () => {
                 <Calendar className="w-5 h-5 text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">Thành viên từ</p>
-                  <p className="font-medium">{user.createdAt.toLocaleDateString('vi-VN')}</p>
+                  <p className="font-medium">{user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</p>
                 </div>
               </div>
             </div>
@@ -620,69 +599,6 @@ const ProfilePage = () => {
               </div>
             </TabsContent>
 
-            {/* Chat Tab */}
-            <TabsContent value="chat">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Conversations List */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>Cuộc trò chuyện</span>
-                      <Button size="sm" onClick={handleStartChat}>
-                        <Plus className="w-4 h-4 mr-1" />
-                        Mới
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="space-y-1">
-                      {conversations.length === 0 ? (
-                        <div className="p-4 text-center text-muted-foreground">
-                          <MessageCircle className="w-8 h-8 mx-auto mb-2" />
-                          <p>Chưa có cuộc trò chuyện nào</p>
-                          <Button variant="link" onClick={handleStartChat}>
-                            Bắt đầu trò chuyện
-                          </Button>
-                        </div>
-                      ) : (
-                        conversations.map((conversation) => (
-                          <CompactChatWindow
-                            key={conversation.id}
-                            conversation={conversation}
-                            onSelect={() => setActiveConversation(conversation.id)}
-                            isActive={activeConversation?.id === conversation.id}
-                          />
-                        ))
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Chat Window */}
-                <div className="lg:col-span-2">
-                  {activeConversation ? (
-                    <ChatWindow
-                      conversation={activeConversation}
-                      onClose={() => setActiveConversation(null)}
-                    />
-                  ) : (
-                    <Card className="h-[500px] flex items-center justify-center">
-                      <CardContent className="text-center">
-                        <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">Chào mừng đến với hỗ trợ trực tuyến</h3>
-                        <p className="text-muted-foreground mb-4">
-                          Chọn một cuộc trò chuyện hoặc bắt đầu cuộc trò chuyện mới để nhận hỗ trợ
-                        </p>
-                        <Button onClick={handleStartChat}>
-                          <MessageSquare className="w-4 h-4 mr-2" />
-                          Bắt đầu trò chuyện
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
 
           </Tabs>
         </div>

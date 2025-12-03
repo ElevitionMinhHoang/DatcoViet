@@ -22,32 +22,11 @@ import {
   Users,
   Package,
   BarChart3,
-  LayoutDashboard
+  LayoutDashboard,
+  MessageSquare
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-const menuItems = {
-  "Thực đơn": [
-    {
-      title: "Mâm cỗ đặc biệt",
-      to: "/special-sets",
-      description: "Các mâm cỗ được thiết kế sẵn, phù hợp cho các dịp lễ, tết, hội họp.",
-      icon: ChefHat,
-    },
-    {
-      title: "Món ăn lẻ",
-      to: "/individual-dishes",
-      description: "Lựa chọn từng món ăn riêng lẻ để tự tạo mâm cỗ theo ý thích.",
-      icon: Salad,
-    },
-    {
-      title: "Đồ uống",
-      to: "/drinks",
-      description: "Các loại đồ uống đa dạng từ truyền thống đến hiện đại.",
-      icon: GlassWater,
-    },
-  ],
-};
 
 export function DesktopNav() {
   const { user } = useAuth();
@@ -64,23 +43,12 @@ export function DesktopNav() {
           </NavLink>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="navigation-menu-trigger">
+          <NavLink
+            to="/menu"
+            className={cn(navigationMenuTriggerStyle(), "navigation-menu-trigger")}
+          >
             Thực đơn
-          </NavigationMenuTrigger>
-          <NavigationMenuContent className="navigation-menu-content">
-            <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-              {menuItems["Thực đơn"].map((component) => (
-                <ListItem
-                  key={component.title}
-                  title={component.title}
-                  to={component.to}
-                  icon={component.icon}
-                >
-                  {component.description}
-                </ListItem>
-              ))}
-            </ul>
-          </NavigationMenuContent>
+          </NavLink>
         </NavigationMenuItem>
         <NavigationMenuItem>
           <NavLink
@@ -98,6 +66,19 @@ export function DesktopNav() {
             Liên hệ
           </NavLink>
         </NavigationMenuItem>
+        
+        {/* Chat Navigation - Only show for logged in users */}
+        {user && (
+          <NavigationMenuItem>
+            <NavLink
+              to="/chat"
+              className={cn(navigationMenuTriggerStyle(), "navigation-menu-trigger")}
+            >
+              <MessageSquare className="w-4 h-4 mr-1" />
+              Hỗ trợ
+            </NavLink>
+          </NavigationMenuItem>
+        )}
         
         {/* Admin Navigation - Only show for admin users */}
         {user?.role === 'ADMIN' && (

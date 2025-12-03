@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, Utensils, Info, Phone, ChefHat, Salad, GlassWater, User, LogOut, X } from "lucide-react";
+import { Home, Utensils, Info, Phone, ChefHat, Salad, GlassWater, User, LogOut, X, MessageSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -122,6 +122,26 @@ export function MobileNav({ onClose }: MobileNavProps) {
                     <div className="font-medium">Hồ sơ</div>
                     <div className="text-sm text-muted-foreground">
                       Thông tin tài khoản
+                    </div>
+                  </div>
+                </NavLink>
+
+                <NavLink
+                  to="/chat"
+                  onClick={handleNavClick}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-md p-3 text-base font-medium transition-colors ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-muted"
+                    }`
+                  }
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  <div className="flex-1">
+                    <div className="font-medium">Hỗ trợ</div>
+                    <div className="text-sm text-muted-foreground">
+                      Chat với nhân viên
                     </div>
                   </div>
                 </NavLink>

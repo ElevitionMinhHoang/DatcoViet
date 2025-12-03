@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Star, CheckCircle, XCircle, Eye, MessageSquare } from "lucide-react";
+import { Star, Trash2, MessageSquare } from "lucide-react";
 import { feedbackAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,37 +42,23 @@ export default function FeedbackManagementPage() {
     }
   };
 
-  const handleApprove = async (id: number) => {
-    try {
-      await feedbackAPI.approveFeedback(id);
-      toast({
-        title: "Thành công",
-        description: "Đánh giá đã được phê duyệt",
-      });
-      loadFeedbacks();
-    } catch (error) {
-      console.error('Failed to approve feedback:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể phê duyệt đánh giá",
-        variant: "destructive",
-      });
+  const handleDelete = async (id: number) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa đánh giá này?')) {
+      return;
     }
-  };
 
-  const handleReject = async (id: number) => {
     try {
-      await feedbackAPI.rejectFeedback(id);
+      await feedbackAPI.deleteFeedback(id);
       toast({
         title: "Thành công",
-        description: "Đánh giá đã bị từ chối",
+        description: "Đánh giá đã được xóa",
       });
       loadFeedbacks();
     } catch (error) {
-      console.error('Failed to reject feedback:', error);
+      console.error('Failed to delete feedback:', error);
       toast({
         title: "Lỗi",
-        description: "Không thể từ chối đánh giá",
+        description: "Không thể xóa đánh giá",
         variant: "destructive",
       });
     }
@@ -111,7 +97,7 @@ export default function FeedbackManagementPage() {
           Quản lý đánh giá
         </h1>
         <p className="text-muted-foreground">
-          Quản lý và phê duyệt đánh giá từ khách hàng
+          Quản lý đánh giá từ khách hàng
         </p>
       </div>
 
@@ -128,7 +114,6 @@ export default function FeedbackManagementPage() {
                   <TableHead>Đơn hàng</TableHead>
                   <TableHead>Đánh giá</TableHead>
                   <TableHead>Bình luận</TableHead>
-                  <TableHead>Trạng thái</TableHead>
                   <TableHead>Ngày tạo</TableHead>
                   <TableHead>Thao tác</TableHead>
                 </TableRow>
@@ -154,45 +139,18 @@ export default function FeedbackManagementPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={feedback.isApproved ? "default" : "secondary"}
-                        className={
-                          feedback.isApproved
-                            ? "bg-green-500 text-white"
-                            : "bg-yellow-500 text-white"
-                        }
-                      >
-                        {feedback.isApproved ? "Đã duyệt" : "Chờ duyệt"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
                       {new Date(feedback.createdAt).toLocaleDateString('vi-VN')}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {!feedback.isApproved && (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprove(feedback.id)}
-                              className="bg-green-500 hover:bg-green-600 text-white"
-                            >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Duyệt
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleReject(feedback.id)}
-                              className="text-red-500 border-red-500 hover:bg-red-50"
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Từ chối
-                            </Button>
-                          </>
-                        )}
-                        <Button size="sm" variant="ghost">
-                          <Eye className="w-4 h-4" />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(feedback.id)}
+                          className="text-red-500 border-red-500 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Xóa
                         </Button>
                       </div>
                     </TableCell>

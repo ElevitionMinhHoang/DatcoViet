@@ -1,14 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Bell, MessageSquare, Shield, Mail, Download, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { Bell, MessageSquare, Shield, Mail } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const SettingsPage = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [autoReviewReminders, setAutoReviewReminders] = useState(true);
@@ -17,6 +14,55 @@ const SettingsPage = () => {
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [allowDirectMessages, setAllowDirectMessages] = useState(true);
   const [saveOrderHistory, setSaveOrderHistory] = useState(true);
+
+  // Load preferences from localStorage on mount
+  useEffect(() => {
+    if (!user) return;
+    const key = `user_preferences_${user.id}`;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        const preferences = JSON.parse(saved);
+        setNotificationsEnabled(preferences.notificationsEnabled ?? true);
+        setEmailNotifications(preferences.emailNotifications ?? true);
+        setAutoReviewReminders(preferences.autoReviewReminders ?? true);
+        setShowPublicReviews(preferences.showPublicReviews ?? true);
+        setReceiveAdminFeedback(preferences.receiveAdminFeedback ?? true);
+        setShowOnlineStatus(preferences.showOnlineStatus ?? true);
+        setAllowDirectMessages(preferences.allowDirectMessages ?? true);
+        setSaveOrderHistory(preferences.saveOrderHistory ?? true);
+      } catch (e) {
+        console.error('Failed to parse saved preferences', e);
+      }
+    }
+  }, [user]);
+
+  // Save preferences whenever any of them changes
+  useEffect(() => {
+    if (!user) return;
+    const key = `user_preferences_${user.id}`;
+    const preferences = {
+      notificationsEnabled,
+      emailNotifications,
+      autoReviewReminders,
+      showPublicReviews,
+      receiveAdminFeedback,
+      showOnlineStatus,
+      allowDirectMessages,
+      saveOrderHistory,
+    };
+    localStorage.setItem(key, JSON.stringify(preferences));
+  }, [
+    user,
+    notificationsEnabled,
+    emailNotifications,
+    autoReviewReminders,
+    showPublicReviews,
+    receiveAdminFeedback,
+    showOnlineStatus,
+    allowDirectMessages,
+    saveOrderHistory,
+  ]);
 
   if (!user) {
     return (
@@ -35,53 +81,6 @@ const SettingsPage = () => {
     );
   }
 
-  const handleSaveChanges = () => {
-    // In a real app, you'd send this data to an API
-    console.log({
-      notificationsEnabled,
-      emailNotifications,
-      autoReviewReminders,
-      showPublicReviews,
-      receiveAdminFeedback,
-      showOnlineStatus,
-      allowDirectMessages,
-      saveOrderHistory,
-    });
-    toast({
-      title: "Đã lưu cài đặt",
-      description: "Các thay đổi của bạn đã được lưu thành công.",
-    });
-  };
-
-  const handleExportData = () => {
-    toast({
-      title: "Đang xuất dữ liệu",
-      description: "Dữ liệu cá nhân của bạn đang được xuất...",
-    });
-    // In a real app, this would trigger a data export API call
-    setTimeout(() => {
-      toast({
-        title: "Xuất dữ liệu thành công",
-        description: "Dữ liệu đã được gửi đến email của bạn.",
-      });
-    }, 2000);
-  };
-
-  const handleDeleteAccount = () => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác.")) {
-      toast({
-        title: "Đang xóa tài khoản",
-        description: "Tài khoản của bạn đang được xóa...",
-      });
-      // In a real app, this would call a delete account API
-      setTimeout(() => {
-        toast({
-          title: "Tài khoản đã được xóa",
-          description: "Tài khoản của bạn đã được xóa thành công.",
-        });
-      }, 2000);
-    }
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -247,32 +246,6 @@ const SettingsPage = () => {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="bg-card rounded-lg border p-6">
-            <h2 className="text-xl font-semibold mb-6">Hành động</h2>
-            
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={handleExportData}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Xuất dữ liệu cá nhân
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-red-600 hover:text-red-700"
-                onClick={handleDeleteAccount}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Xóa tài khoản
-              </Button>
-              <Button className="w-full" onClick={handleSaveChanges}>
-                Lưu thay đổi
-              </Button>
-            </div>
-          </div>
       </div>
     </div>
   );

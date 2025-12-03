@@ -3,8 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Grid, List } from "lucide-react";
-import { menusAPI } from "@/services/api";
+import { Search, Grid, List, Star } from "lucide-react";
+import { menusAPI, feedbackAPI } from "@/services/api";
 import { Dish } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +26,35 @@ export default function IndividualDishesPage() {
     const loadDishes = async () => {
       try {
         const dishesData = await menusAPI.getAllMenus();
-        setDishes(dishesData);
+        // Filter out "Mâm Cỗ" items to only show individual dishes
+        const individualDishes = dishesData.filter(dish => dish.category !== "Mâm Cỗ");
+        
+        // Enrich each dish with rating data
+        const enrichedDishes = await Promise.all(
+          individualDishes.map(async (dish) => {
+            try {
+              const reviews = await feedbackAPI.getFeedbackByMenu(dish.id);
+              const reviewCount = reviews.length;
+              const rating = reviewCount > 0
+                ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+                : 0;
+              return {
+                ...dish,
+                rating: parseFloat(rating.toFixed(1)),
+                reviewCount,
+              };
+            } catch (error) {
+              console.error(`Failed to fetch reviews for dish ${dish.id}:`, error);
+              return {
+                ...dish,
+                rating: 0,
+                reviewCount: 0,
+              };
+            }
+          })
+        );
+        
+        setDishes(enrichedDishes);
       } catch (error) {
         console.error('Failed to load dishes:', error);
         toast({
@@ -95,59 +123,74 @@ export default function IndividualDishesPage() {
     }).format(price);
   };
 
-  const DishCard = ({ dish }: { dish: Dish }) => (
-    <Card
-      className="overflow-hidden hover:shadow-warm transition-smooth cursor-pointer group"
-      onClick={() => handleViewDetails(dish.id)}
-    >
-      <div className="relative">
-        <img
-          src={dish.image}
-          alt={dish.name}
-          className="w-full h-40 object-cover group-hover:scale-105 transition-smooth"
-        />
-        {dish.isVegetarian && (
-          <Badge className="absolute top-2 left-2 bg-green-500 text-white">
-            Chay
-          </Badge>
-        )}
-        {dish.isSpicy && (
-          <Badge className="absolute top-2 right-2 bg-red-500 text-white">
-            Cay
-          </Badge>
-        )}
-      </div>
-      
-      <CardContent className="p-4">
-        <div className="space-y-2">
-          <h3 className="font-semibold text-foreground group-hover:text-primary transition-smooth">
-            {dish.name}
-          </h3>
-          <p className="text-muted-foreground text-sm line-clamp-2">
-            {dish.description}
-          </p>
-          <div className="flex items-center justify-between pt-2">
-            <div>
-              <span className="text-lg font-bold text-primary">
-                {formatPrice(dish.price)}
-              </span>
-              <span className="text-muted-foreground text-sm ml-1">/ {dish.unit}</span>
-            </div>
-            <Button
-              size="sm"
-              variant="hero"
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent navigation when clicking button
-                handleAddToCart(dish.id);
-              }}
-            >
-              Thêm vào giỏ hàng
-            </Button>
+  const DishCard = ({ dish }: { dish: Dish }) => {
+    const rating = dish.rating ?? 0;
+    const reviewCount = dish.reviewCount ?? 0;
+    const hasReviews = rating > 0 && reviewCount > 0;
+    return (
+      <Card
+        className="overflow-hidden hover:shadow-warm transition-smooth cursor-pointer group"
+        onClick={() => handleViewDetails(dish.id)}
+      >
+        <div className="relative">
+          <img
+            src={dish.image}
+            alt={dish.name}
+            className="w-full h-40 object-cover group-hover:scale-105 transition-smooth"
+          />
+          {dish.isVegetarian && (
+            <Badge className="absolute top-2 left-2 bg-green-500 text-white">
+              Chay
+            </Badge>
+          )}
+          {dish.isSpicy && (
+            <Badge className="absolute top-2 right-2 bg-red-500 text-white">
+              Cay
+            </Badge>
+          )}
+          {/* Rating badge */}
+          <div className="absolute top-10 right-3 flex items-center gap-1 bg-background/90 px-2 py-1 rounded-full text-sm">
+            <Star className={`w-4 h-4 ${hasReviews ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+            <span className="font-medium">{rating.toFixed(1)}</span>
+            {hasReviews ? (
+              <span className="text-muted-foreground text-sm">({reviewCount} đánh giá)</span>
+            ) : (
+              <span className="text-muted-foreground text-sm">Chưa có đánh giá</span>
+            )}
           </div>
         </div>
-      </CardContent>
-    </Card>
-  );
+        
+        <CardContent className="p-4">
+          <div className="space-y-2">
+            <h3 className="font-semibold text-foreground group-hover:text-primary transition-smooth">
+              {dish.name}
+            </h3>
+            <p className="text-muted-foreground text-sm line-clamp-2">
+              {dish.description}
+            </p>
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <span className="text-lg font-bold text-primary">
+                  {formatPrice(dish.price)}
+                </span>
+                <span className="text-muted-foreground text-sm ml-1">/ {dish.unit}</span>
+              </div>
+              <Button
+                size="sm"
+                variant="hero"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent navigation when clicking button
+                  handleAddToCart(dish.id);
+                }}
+              >
+                Thêm vào giỏ hàng
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   if (isLoading) {
     return (

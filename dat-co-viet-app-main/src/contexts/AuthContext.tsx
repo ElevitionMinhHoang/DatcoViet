@@ -114,15 +114,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProfile = async (data: Partial<User>) => {
+    console.log('AuthContext.updateProfile called with data:', data);
     if (user) {
       try {
+        console.log('Calling usersAPI.updateProfile...');
         const updatedUser = await usersAPI.updateProfile(data);
+        console.log('AuthContext.updateProfile - updatedUser received:', updatedUser);
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log('AuthContext.updateProfile - user state updated and localStorage saved');
       } catch (error) {
         console.error('Profile update failed:', error);
         throw error;
       }
+    } else {
+      console.warn('AuthContext.updateProfile - no user found, skipping');
     }
   };
 

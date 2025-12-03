@@ -28,6 +28,8 @@ export interface Dish {
   isSpicy?: boolean;
   preparationTime?: number;
   tags?: string[];
+  rating?: number;
+  reviewCount?: number;
 }
 
 export interface FeastSet {
@@ -95,6 +97,7 @@ export interface Review {
   adminResponse?: string;
   createdAt: Date;
   approvedAt?: Date;
+  dishName?: string;
 }
 
 export interface Message {
@@ -107,7 +110,7 @@ export interface Message {
   toUserName: string;
   toUserRole: User['role'];
   content: string;
-  messageType: 'text' | 'image' | 'system';
+  messageType: 'text' | 'image' | 'file' | 'system';
   images?: string[];
   isRead: boolean;
   createdAt: Date;
@@ -137,8 +140,9 @@ export interface ChatContextType {
   activeConversation: Conversation | null;
   messages: Message[];
   unreadCount: number;
-  sendMessage: (conversationId: string, content: string, messageType?: 'text' | 'image') => Promise<void>;
+  sendMessage: (conversationId: string, content: string, messageType?: 'text' | 'image' | 'file') => Promise<void>;
   markAsRead: (conversationId: string) => void;
+  markAllAsRead: () => Promise<void>;
   createConversation: (participantIds: string[], orderId?: string) => string;
   setActiveConversation: (conversationId: string | null) => void;
   isLoading: boolean;

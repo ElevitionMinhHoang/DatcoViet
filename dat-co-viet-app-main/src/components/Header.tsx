@@ -1,4 +1,4 @@
-import { ShoppingCart, User, Menu, LogOut, Settings, MessageSquare } from "lucide-react";
+import { ShoppingCart, User, Menu, LogOut, Settings } from "lucide-react";
 import { SearchBar } from "./SearchBar";
 import { NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -81,24 +81,6 @@ export function Header({ onMenuClick, onProfileClick, onCartClick, onSettingsCli
                   <ShoppingCart className="w-5 h-5" />
                 </Button>
                 
-                {isLoggedIn && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative"
-                    onClick={() => navigate("/profile", { state: { tab: "chat" } })}
-                  >
-                    <MessageSquare className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-                      >
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </Badge>
-                    )}
-                  </Button>
-                )}
               </>
             )}
             
@@ -131,15 +113,6 @@ export function Header({ onMenuClick, onProfileClick, onCartClick, onSettingsCli
                       <DropdownMenuItem onClick={onProfileClick}>
                         <User className="w-4 h-4 mr-2" />
                         <span>Hồ sơ</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/profile", { state: { tab: "chat" } })}>
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                        <span>Tin nhắn</span>
-                        {unreadCount > 0 && (
-                          <Badge variant="destructive" className="ml-auto">
-                            {unreadCount}
-                          </Badge>
-                        )}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={onSettingsClick}>
                         <Settings className="w-4 h-4 mr-2" />

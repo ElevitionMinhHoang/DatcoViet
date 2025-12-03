@@ -49,6 +49,15 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
         const errorText = await response.text();
         console.log('Error response text:', errorText);
       }
+      // If unauthorized (401), clear token and user
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Optionally redirect to login page
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
       throw new Error(errorMessage);
     }
 
@@ -97,6 +106,20 @@ export const authAPI = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+  },
+
+  forgotPassword: async (email: string) => {
+    return await apiRequest('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  resetPassword: async (token: string, newPassword: string) => {
+    return await apiRequest('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password: newPassword }),
+    });
   },
 };
 
@@ -156,30 +179,45 @@ export const adminAPI = {
 export const menusAPI = {
   getAllMenus: async (): Promise<Dish[]> => {
     const data = await apiRequest('/menus');
-    return data.map((item: any) => ({
-      id: item.id.toString(),
-      name: item.name,
-      description: item.description || `${item.name} - Món ăn truyền thống Việt Nam`,
-      image: item.image || '/images/placeholder.svg',
-      price: item.price,
-      category: item.category,
-      unit: 'phần',
-      isAvailable: item.isActive !== false,
-      ingredients: [],
-      isVegetarian: false,
-      isSpicy: false,
-      preparationTime: 30,
-      tags: [],
-    }));
+    return data.map((item: any) => {
+      // Construct full image URL if it's a relative path
+      let imageUrl = item.image || '/images/placeholder.svg';
+      if (imageUrl.startsWith('/uploads/')) {
+        imageUrl = `${API_BASE_URL.replace('/api/v1', '')}${imageUrl}`;
+      }
+      
+      return {
+        id: item.id.toString(),
+        name: item.name,
+        description: item.description || `${item.name} - Món ăn truyền thống Việt Nam`,
+        image: imageUrl,
+        price: item.price,
+        category: item.category,
+        unit: 'phần',
+        isAvailable: item.isActive !== false,
+        ingredients: [],
+        isVegetarian: false,
+        isSpicy: false,
+        preparationTime: 30,
+        tags: [],
+      };
+    });
   },
 
   getMenuById: async (id: string): Promise<Dish> => {
     const data = await apiRequest(`/menus/${id}`);
+    
+    // Construct full image URL if it's a relative path
+    let imageUrl = data.image || '/images/placeholder.svg';
+    if (imageUrl.startsWith('/uploads/')) {
+      imageUrl = `${API_BASE_URL.replace('/api/v1', '')}${imageUrl}`;
+    }
+    
     return {
       id: data.id.toString(),
       name: data.name,
       description: data.description || `${data.name} - Món ăn truyền thống Việt Nam`,
-      image: data.image || '/images/placeholder.svg',
+      image: imageUrl,
       price: data.price,
       category: data.category,
       unit: 'phần',
@@ -198,11 +236,57 @@ export const menusAPI = {
     category: string;
     image: string;
     isActive: boolean;
+    imageFile?: File;
   }) => {
-    return await apiRequest('/menus', {
-      method: 'POST',
-      body: JSON.stringify(menuData),
-    });
+    if (menuData.imageFile) {
+      // Use FormData for file upload
+      const formData = new FormData();
+      formData.append('name', menuData.name);
+      formData.append('price', menuData.price.toString());
+      formData.append('category', menuData.category);
+      formData.append('isActive', menuData.isActive.toString());
+      formData.append('image', menuData.imageFile);
+      
+      const url = `${API_BASE_URL}/menus`;
+      const token = localStorage.getItem('token');
+      
+      console.log(`API Request: POST ${url} (multipart/form-data)`);
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          let errorMessage = `HTTP error! status: ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch {
+            const errorText = await response.text();
+            console.log('Error response text:', errorText);
+          }
+          throw new Error(errorMessage);
+        }
+
+        const result = await response.json();
+        console.log('API Success:', result);
+        return result;
+      } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+      }
+    } else {
+      // Use JSON for regular data
+      return await apiRequest('/menus', {
+        method: 'POST',
+        body: JSON.stringify(menuData),
+      });
+    }
   },
 
   updateMenuItem: async (id: string, menuData: {
@@ -296,6 +380,7 @@ export const feedbackAPI = {
       status: review.status,
       createdAt: new Date(review.createdAt),
       approvedAt: review.approvedAt ? new Date(review.approvedAt) : undefined,
+      dishName: review.dishName,
     }));
   },
 
@@ -344,14 +429,8 @@ export const feedbackAPI = {
     }));
   },
 
-  approveFeedback: async (id: number): Promise<any> => {
-    return await apiRequest(`/feedback/${id}/approve`, {
-      method: 'PATCH',
-    });
-  },
-
-  rejectFeedback: async (id: number): Promise<any> => {
-    return await apiRequest(`/feedback/${id}/reject`, {
+  deleteFeedback: async (id: number): Promise<any> => {
+    return await apiRequest(`/feedback/${id}`, {
       method: 'PATCH',
     });
   },
@@ -363,43 +442,101 @@ export const feastSetsAPI = {
     // Get all menus and filter for feast sets (category = "Mâm Cỗ")
     const allMenus = await menusAPI.getAllMenus();
     const feastSets = allMenus.filter(menu => menu.category === 'Mâm Cỗ');
-    
-    return feastSets.map(menu => ({
-      id: menu.id,
-      name: menu.name,
-      description: menu.description,
-      image: menu.image,
-      price: menu.price,
-      dishes: [],
-      servings: 4,
-      category: menu.category,
-      isPopular: true,
-      rating: 4.8,
-      reviewCount: 124,
-      isActive: menu.isAvailable,
-      tags: ['Truyền thống', 'Ấm cúng'],
-    }));
+
+    // Fetch reviews for each feast set in parallel
+    const feastSetsWithReviews = await Promise.all(
+      feastSets.map(async (menu) => {
+        try {
+          const reviews = await feedbackAPI.getFeedbackByMenu(menu.id);
+          const reviewCount = reviews.length;
+          const rating = reviewCount > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+            : 0;
+          return {
+            id: menu.id,
+            name: menu.name,
+            description: menu.description,
+            image: menu.image,
+            price: menu.price,
+            dishes: [],
+            servings: 4,
+            category: menu.category,
+            isPopular: true,
+            rating: parseFloat(rating.toFixed(1)), // round to 1 decimal
+            reviewCount,
+            isActive: menu.isAvailable,
+            tags: ['Truyền thống', 'Ấm cúng'],
+          };
+        } catch (error) {
+          console.error(`Failed to fetch reviews for menu ${menu.id}:`, error);
+          // Fallback to default values
+          return {
+            id: menu.id,
+            name: menu.name,
+            description: menu.description,
+            image: menu.image,
+            price: menu.price,
+            dishes: [],
+            servings: 4,
+            category: menu.category,
+            isPopular: true,
+            rating: 0,
+            reviewCount: 0,
+            isActive: menu.isAvailable,
+            tags: ['Truyền thống', 'Ấm cúng'],
+          };
+        }
+      })
+    );
+
+    return feastSetsWithReviews;
   },
 
   getFeastSetById: async (id: string): Promise<FeastSet> => {
     // Get menu item by ID and convert to feast set format
     const menuItem = await menusAPI.getMenuById(id);
     
-    return {
-      id: menuItem.id,
-      name: menuItem.name,
-      description: menuItem.description,
-      image: menuItem.image,
-      price: menuItem.price,
-      dishes: [],
-      servings: 4,
-      category: menuItem.category,
-      isPopular: true,
-      rating: 4.8,
-      reviewCount: 124,
-      isActive: menuItem.isAvailable,
-      tags: ['Truyền thống', 'Ấm cúng'],
-    };
+    try {
+      const reviews = await feedbackAPI.getFeedbackByMenu(id);
+      const reviewCount = reviews.length;
+      const rating = reviewCount > 0
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+        : 0;
+      
+      return {
+        id: menuItem.id,
+        name: menuItem.name,
+        description: menuItem.description,
+        image: menuItem.image,
+        price: menuItem.price,
+        dishes: [],
+        servings: 4,
+        category: menuItem.category,
+        isPopular: true,
+        rating: parseFloat(rating.toFixed(1)),
+        reviewCount,
+        isActive: menuItem.isAvailable,
+        tags: ['Truyền thống', 'Ấm cúng'],
+      };
+    } catch (error) {
+      console.error(`Failed to fetch reviews for menu ${id}:`, error);
+      // Fallback
+      return {
+        id: menuItem.id,
+        name: menuItem.name,
+        description: menuItem.description,
+        image: menuItem.image,
+        price: menuItem.price,
+        dishes: [],
+        servings: 4,
+        category: menuItem.category,
+        isPopular: true,
+        rating: 0,
+        reviewCount: 0,
+        isActive: menuItem.isAvailable,
+        tags: ['Truyền thống', 'Ấm cúng'],
+      };
+    }
   },
 };
 
@@ -423,6 +560,54 @@ export const paymentsAPI = {
   refundPayment: async (paymentId: number): Promise<any> => {
     return await apiRequest(`/payments/${paymentId}/refund`, {
       method: 'PATCH',
+    });
+  },
+};
+
+// Chat API
+export const chatAPI = {
+  // Get or create user chat room
+  getOrCreateChatRoom: async () => {
+    return await apiRequest('/chat/room');
+  },
+
+  // Get all chat rooms (for admin)
+  getChatRooms: async () => {
+    return await apiRequest('/chat/rooms');
+  },
+
+  // Get messages for a chat room
+  getChatRoomMessages: async (roomId: number) => {
+    return await apiRequest(`/chat/room/${roomId}/messages`);
+  },
+
+  // Send a message
+  sendMessage: async (messageData: {
+    roomId: number;
+    message: string;
+  }) => {
+    return await apiRequest('/chat/message', {
+      method: 'POST',
+      body: JSON.stringify(messageData),
+    });
+  },
+
+  // Mark messages as read
+  markMessagesAsRead: async (roomId: number) => {
+    return await apiRequest(`/chat/room/${roomId}/read`, {
+      method: 'POST',
+    });
+  },
+
+  // Get unread message count
+  getUnreadCount: async () => {
+    return await apiRequest('/chat/unread-count');
+  },
+
+  // Close chat room
+  closeChatRoom: async (roomId: number) => {
+    return await apiRequest(`/chat/room/${roomId}/close`, {
+      method: 'POST',
     });
   },
 };
@@ -451,4 +636,5 @@ export default {
   admin: adminAPI,
   payments: paymentsAPI,
   contact: contactAPI,
+  chat: chatAPI,
 };

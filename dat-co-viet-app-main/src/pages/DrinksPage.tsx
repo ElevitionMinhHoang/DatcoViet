@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Grid, List } from "lucide-react";
-import { dishes } from "@/data/mockData";
+import { Search, Grid, List, Loader2 } from "lucide-react";
+import { menusAPI } from "@/services/api";
 import { Dish } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -14,36 +14,70 @@ export default function DrinksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [drinks, setDrinks] = useState<Dish[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isLoggedIn, user } = useAuth();
 
   const drinkCategories = ["Tất cả", "Trà", "Nước ép", "Sinh tố", "Bia", "Rượu", "Nước ngọt", "Cà phê"];
 
-  const filteredDrinks = dishes.filter(dish => {
-    const isDrink = dish.category === "Đồ uống";
-    const matchesSearch = dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         dish.description.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    loadDrinks();
+  }, []);
+
+  const loadDrinks = async () => {
+    setIsLoading(true);
+    try {
+      const dishesData = await menusAPI.getAllMenus();
+      // Filter drinks by category "Đồ uống" or "Đồ Uống"
+      const drinksData = dishesData.filter(dish =>
+        dish.category === "Đồ uống" || dish.category === "Đồ Uống"
+      );
+      setDrinks(drinksData);
+    } catch (error) {
+      console.error('Failed to load drinks:', error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải dữ liệu đồ uống từ server",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredDrinks = drinks.filter(drink => {
+    const matchesSearch = drink.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (drink.description && drink.description.toLowerCase().includes(searchQuery.toLowerCase()));
     
     let matchesCategory = selectedCategory === "Tất cả";
     if (selectedCategory === "Trà") {
-      matchesCategory = dish.name.toLowerCase().includes('trà') || dish.description.toLowerCase().includes('trà');
+      matchesCategory = drink.name.toLowerCase().includes('trà') ||
+                       (drink.description && drink.description.toLowerCase().includes('trà'));
     } else if (selectedCategory === "Nước ép") {
-      matchesCategory = dish.name.toLowerCase().includes('ép') || dish.description.toLowerCase().includes('ép');
+      matchesCategory = drink.name.toLowerCase().includes('ép') ||
+                       (drink.description && drink.description.toLowerCase().includes('ép'));
     } else if (selectedCategory === "Sinh tố") {
-      matchesCategory = dish.name.toLowerCase().includes('sinh tố') || dish.description.toLowerCase().includes('sinh tố');
+      matchesCategory = drink.name.toLowerCase().includes('sinh tố') ||
+                       (drink.description && drink.description.toLowerCase().includes('sinh tố'));
     } else if (selectedCategory === "Bia") {
-      matchesCategory = dish.name.toLowerCase().includes('bia') || dish.description.toLowerCase().includes('bia');
+      matchesCategory = drink.name.toLowerCase().includes('bia') ||
+                       (drink.description && drink.description.toLowerCase().includes('bia'));
     } else if (selectedCategory === "Rượu") {
-      matchesCategory = dish.name.toLowerCase().includes('rượu') || dish.description.toLowerCase().includes('rượu');
+      matchesCategory = drink.name.toLowerCase().includes('rượu') ||
+                       (drink.description && drink.description.toLowerCase().includes('rượu'));
     } else if (selectedCategory === "Nước ngọt") {
-      matchesCategory = dish.name.toLowerCase().includes('coca') || dish.description.toLowerCase().includes('nước ngọt');
+      matchesCategory = drink.name.toLowerCase().includes('coca') ||
+                       drink.name.toLowerCase().includes('fanta') ||
+                       (drink.description && drink.description.toLowerCase().includes('nước ngọt'));
     } else if (selectedCategory === "Cà phê") {
-      matchesCategory = dish.name.toLowerCase().includes('cà phê') || dish.description.toLowerCase().includes('cà phê');
+      matchesCategory = drink.name.toLowerCase().includes('cà phê') ||
+                       (drink.description && drink.description.toLowerCase().includes('cà phê'));
     }
     
-    return isDrink && matchesSearch && matchesCategory && dish.isAvailable;
+    return matchesSearch && matchesCategory && drink.isAvailable;
   });
-  const { isLoggedIn, user } = useAuth();
 
   const handleAddToCart = (id: string) => {
     if (!isLoggedIn) {
@@ -61,7 +95,7 @@ export default function DrinksPage() {
       return;
     }
     
-    const dish = dishes.find(d => d.id === id);
+    const dish = drinks.find(d => d.id === id);
     if (dish) {
       toast({
         title: "Đã thêm vào giỏ hàng",

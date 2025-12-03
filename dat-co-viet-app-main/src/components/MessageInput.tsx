@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Paperclip, Smile } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MessageInputProps {
@@ -11,11 +11,11 @@ interface MessageInputProps {
   className?: string;
 }
 
-export function MessageInput({ 
-  onSendMessage, 
-  disabled = false, 
+export function MessageInput({
+  onSendMessage,
+  disabled = false,
   placeholder = "Nhập tin nhắn...",
-  className 
+  className
 }: MessageInputProps) {
   const [message, setMessage] = useState('');
 
@@ -38,38 +38,16 @@ export function MessageInput({
   return (
     <div className={cn("border-t bg-background p-4", className)}>
       <form onSubmit={handleSubmit} className="flex gap-2">
-        <div className="flex-1 relative">
+        <div className="flex-1">
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={placeholder}
             disabled={disabled}
-            className="min-h-[60px] resize-none pr-12"
+            className="min-h-[60px] resize-none"
             rows={1}
           />
-          
-          <div className="absolute right-2 top-2 flex gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              disabled={disabled}
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
-            
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              disabled={disabled}
-            >
-              <Smile className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
         
         <Button

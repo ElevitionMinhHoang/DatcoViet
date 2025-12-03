@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, EyeOff, ChefHat } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { authAPI } from "@/services/api";
 
 export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -184,10 +185,24 @@ export default function AuthPage() {
       return;
     }
 
-    toast({
-      title: "Email đã được gửi",
-      description: "Vui lòng kiểm tra hộp thư của bạn để reset mật khẩu",
-    });
+    setIsLoading(true);
+    try {
+      await authAPI.forgotPassword(forgotPasswordForm.email);
+      toast({
+        title: "Email đã được gửi",
+        description: "Vui lòng kiểm tra hộp thư của bạn để reset mật khẩu",
+      });
+      setForgotPasswordForm({ email: "" });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Đã xảy ra lỗi không xác định';
+      toast({
+        title: "Gửi email thất bại",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -286,15 +301,6 @@ export default function AuthPage() {
                 </Tabs>
               </div>
 
-              {/* Demo credentials */}
-              <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm font-medium mb-2">Tài khoản demo:</p>
-                <div className="text-xs space-y-1 text-muted-foreground">
-                  <div>👑 Admin: admin@example.com / password</div>
-                  <div>👤 Khách hàng: user@example.com / password</div>
-                  <div>🚚 Shipper: shipper@example.com / password</div>
-                </div>
-              </div>
             </TabsContent>
 
             <TabsContent value="register" className="space-y-4 mt-6">

@@ -1,19 +1,20 @@
 import { useChat } from "@/contexts/ChatContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { MessageSquare, Search, Filter, Mail, User, Clock, CheckCircle, Plus } from "lucide-react";
+import { MessageSquare, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChatWindow, CompactChatWindow } from "@/components/ChatWindow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const MessagesManagementPage = () => {
-  const { conversations, activeConversation, setActiveConversation, unreadCount } = useChat();
+  const { conversations, activeConversation, setActiveConversation } = useChat();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("active");
+  const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [conversationsPerPage] = useState(15);
 
   // Filter conversations based on active tab and search term
   const filteredConversations = conversations.filter(conv => {
@@ -22,16 +23,37 @@ const MessagesManagementPage = () => {
       conv.lastMessage?.content.toLowerCase().includes(searchTerm.toLowerCase())
     );
     
-    const matchesTab = activeTab === "all" ||
-      (activeTab === "active" && conv.status === "active") ||
-      (activeTab === "unread" && conv.unreadCount > 0) ||
-      (activeTab === "resolved" && conv.status === "resolved");
+    const matchesTab = activeTab === "all";
 
     return matchesSearch && matchesTab;
   });
 
-  const activeConversations = conversations.filter(conv => conv.status === "active");
-  const unreadConversations = conversations.filter(conv => conv.unreadCount > 0);
+  // Pagination logic
+  const indexOfLastConversation = currentPage * conversationsPerPage;
+  const indexOfFirstConversation = indexOfLastConversation - conversationsPerPage;
+  const currentConversations = filteredConversations.slice(indexOfFirstConversation, indexOfLastConversation);
+  const totalPages = Math.ceil(filteredConversations.length / conversationsPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchTerm]);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handlePageClick = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -40,27 +62,17 @@ const MessagesManagementPage = () => {
             <h1 className="text-3xl font-bold">Tin nhắn & Hỗ trợ khách hàng</h1>
             <p className="text-muted-foreground mt-1">Quản lý và trả lời tin nhắn từ khách hàng</p>
           </div>
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            <CheckCircle className="w-4 h-4 mr-1" />
-            {unreadCount} tin nhắn mới
-          </Badge>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Conversations Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <Card>
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-blue-600">{conversations.length}</div>
                   <div className="text-sm text-muted-foreground">Tổng số</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-orange-600">{unreadConversations.length}</div>
-                  <div className="text-sm text-muted-foreground">Chưa đọc</div>
                 </CardContent>
               </Card>
             </div>
@@ -81,46 +93,16 @@ const MessagesManagementPage = () => {
                   />
                 </div>
                 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid grid-cols-2">
-                    <TabsTrigger value="active">Đang hoạt động</TabsTrigger>
-                    <TabsTrigger value="unread">Chưa đọc</TabsTrigger>
-                  </TabsList>
-                  <div className="mt-2 space-y-1">
-                    <Button
-                      variant={activeTab === "all" ? "secondary" : "ghost"}
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => setActiveTab("all")}
-                    >
-                      Tất cả ({conversations.length})
-                    </Button>
-                    <Button
-                      variant={activeTab === "active" ? "secondary" : "ghost"}
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => setActiveTab("active")}
-                    >
-                      Đang hoạt động ({activeConversations.length})
-                    </Button>
-                    <Button
-                      variant={activeTab === "unread" ? "secondary" : "ghost"}
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => setActiveTab("unread")}
-                    >
-                      Chưa đọc ({unreadConversations.length})
-                    </Button>
-                    <Button
-                      variant={activeTab === "resolved" ? "secondary" : "ghost"}
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => setActiveTab("resolved")}
-                    >
-                      Đã giải quyết
-                    </Button>
-                  </div>
-                </Tabs>
+                <div className="space-y-2">
+                  <Button
+                    variant={activeTab === "all" ? "secondary" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab("all")}
+                  >
+                    Tất cả ({conversations.length})
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -145,12 +127,17 @@ const MessagesManagementPage = () => {
               />
             ) : (
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Cuộc trò chuyện</CardTitle>
+                  {filteredConversations.length > conversationsPerPage && (
+                    <div className="text-sm text-muted-foreground">
+                      Hiển thị {indexOfFirstConversation + 1}-{Math.min(indexOfLastConversation, filteredConversations.length)} trên {filteredConversations.length}
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="max-h-[600px] overflow-y-auto">
-                    {filteredConversations.map((conversation) => (
+                    {currentConversations.map((conversation) => (
                       <CompactChatWindow
                         key={conversation.id}
                         conversation={conversation}
@@ -159,6 +146,62 @@ const MessagesManagementPage = () => {
                       />
                     ))}
                   </div>
+                  
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between p-4 border-t">
+                      <div className="text-sm text-muted-foreground">
+                        Trang {currentPage} trên {totalPages}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handlePrevPage}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        
+                        {/* Page Numbers */}
+                        <div className="flex space-x-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNumber;
+                            if (totalPages <= 5) {
+                              pageNumber = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNumber = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNumber = totalPages - 4 + i;
+                            } else {
+                              pageNumber = currentPage - 2 + i;
+                            }
+                            
+                            return (
+                              <Button
+                                key={pageNumber}
+                                variant={currentPage === pageNumber ? "secondary" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => handlePageClick(pageNumber)}
+                              >
+                                {pageNumber}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleNextPage}
+                          disabled={currentPage === totalPages}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

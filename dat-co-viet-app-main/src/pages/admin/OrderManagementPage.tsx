@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Filter, CheckCircle, Clock, XCircle, Truck } from "lucide-react";
+import { Package, Search, CheckCircle, Clock, XCircle, Truck, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import api from '@/services/api';
 
 interface Order {
@@ -34,6 +41,10 @@ const OrderManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const itemsPerPage = 15;
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -43,8 +54,11 @@ const OrderManagementPage = () => {
         const data = await api.admin.getOrders();
         console.log('API response data:', data);
         
+        // Ensure data is an array
+        const ordersArray = Array.isArray(data) ? data : [];
+        
         // Transform data from backend to frontend format
-        const transformedOrders = data.map((order: any) => ({
+        const transformedOrders = ordersArray.map((order: any) => ({
           id: order.id,
           orderNumber: `ORD${order.id.toString().padStart(4, '0')}`,
           customerName: order.user?.name || 'Khách hàng',
@@ -84,6 +98,11 @@ const OrderManagementPage = () => {
 
     setFilteredOrders(filtered);
   }, [searchTerm, statusFilter, orders]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
 
   const getStatusInfo = (status: string) => {
     const statusInfo: Record<string, { label: string; icon: React.ElementType; bgColor: string; textColor: string }> = {
@@ -160,6 +179,11 @@ const OrderManagementPage = () => {
     }
   };
 
+  const openDetailModal = (order: Order) => {
+    setSelectedOrder(order);
+    setIsDetailModalOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto">
@@ -169,6 +193,23 @@ const OrderManagementPage = () => {
       </div>
     );
   }
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
 
   return (
       <div className="max-w-6xl mx-auto">
@@ -191,10 +232,6 @@ const OrderManagementPage = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button variant="outline">
-              <Filter className="w-4 h-4 mr-2" />
-              Lọc
-            </Button>
           </div>
           
           <div className="flex gap-2 mt-4 overflow-x-auto">
@@ -212,6 +249,13 @@ const OrderManagementPage = () => {
             >
               Chờ xác nhận
             </Button>
+             <Button 
+               variant={statusFilter === 'CONFIRMED' ? 'default' : 'outline'} 
+               size="sm"
+               onClick={() => setStatusFilter('CONFIRMED')}
+             >
+               Đã xác nhận
+             </Button>
             <Button 
               variant={statusFilter === 'PREPARING' ? 'default' : 'outline'} 
               size="sm"
@@ -265,7 +309,7 @@ const OrderManagementPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((order) => {
+                  paginatedOrders.map((order) => {
                     const statusInfo = getStatusInfo(order.status);
                     const StatusIcon = statusInfo.icon;
                     
@@ -283,33 +327,41 @@ const OrderManagementPage = () => {
                         <td className="py-3 px-4">{formatDate(order.createdAt)}</td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openDetailModal(order)}
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              Chi tiết
+                            </Button>
                             {order.status === 'PENDING' && (
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 onClick={() => handleStatusChange(order.id, 'CONFIRMED')}
                               >
                                 Xác nhận
                               </Button>
                             )}
                             {order.status === 'CONFIRMED' && (
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 onClick={() => handleStatusChange(order.id, 'PREPARING')}
                               >
                                 Bắt đầu chuẩn bị
                               </Button>
                             )}
                             {order.status === 'PREPARING' && (
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 onClick={() => handleStatusChange(order.id, 'DELIVERING')}
                               >
                                 Giao hàng
                               </Button>
                             )}
                             {order.status === 'DELIVERING' && (
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 onClick={() => handleStatusChange(order.id, 'COMPLETED')}
                               >
                                 Hoàn thành
@@ -327,14 +379,145 @@ const OrderManagementPage = () => {
           
           <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              Hiển thị {filteredOrders.length} trên {orders.length} đơn hàng
+              Hiển thị {filteredOrders.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredOrders.length)} trên {filteredOrders.length} đơn hàng (tổng {orders.length})
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">Trước</Button>
-              <Button variant="outline" size="sm">Sau</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+              >
+                Trước
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                Sau
+              </Button>
             </div>
           </div>
         </div>
+
+        {/* Order Detail Dialog */}
+        <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Chi tiết đơn hàng</DialogTitle>
+              <DialogDescription>
+                Thông tin chi tiết về đơn hàng và các món đã đặt.
+              </DialogDescription>
+            </DialogHeader>
+            {selectedOrder && (
+              <div className="space-y-6">
+                {/* Order Summary */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold text-sm text-muted-foreground">Mã đơn hàng</h3>
+                    <p className="text-lg font-mono">#{selectedOrder.orderNumber}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-muted-foreground">Ngày đặt</h3>
+                    <p className="text-lg">{formatDate(selectedOrder.createdAt)}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-muted-foreground">Khách hàng</h3>
+                    <p className="text-lg">{selectedOrder.customerName}</p>
+                    {selectedOrder.user?.email && (
+                      <p className="text-sm text-muted-foreground">{selectedOrder.user.email}</p>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-muted-foreground">Trạng thái</h3>
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const statusInfo = getStatusInfo(selectedOrder.status);
+                        const StatusIcon = statusInfo.icon;
+                        return (
+                          <span className={`px-2 py-1 ${statusInfo.bgColor} ${statusInfo.textColor} text-xs rounded-full flex items-center gap-1 w-fit`}>
+                            <StatusIcon className="w-3 h-3" />
+                            {statusInfo.label}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-muted-foreground">Tổng tiền</h3>
+                    <p className="text-2xl font-bold text-primary">{formatCurrency(selectedOrder.totalAmount)}</p>
+                  </div>
+                </div>
+
+                {/* Order Items */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-4">Danh sách món đã đặt</h3>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="text-left py-3 px-4">Món</th>
+                          <th className="text-left py-3 px-4">Đơn giá</th>
+                          <th className="text-left py-3 px-4">Số lượng</th>
+                          <th className="text-left py-3 px-4">Thành tiền</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedOrder.items.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="py-4 text-center text-muted-foreground">
+                              Không có món nào trong đơn hàng này.
+                            </td>
+                          </tr>
+                        ) : (
+                          selectedOrder.items.map((item) => (
+                            <tr key={item.id} className="border-b">
+                              <td className="py-3 px-4">
+                                <div className="font-medium">{item.menu?.name || 'Không xác định'}</div>
+                              </td>
+                              <td className="py-3 px-4">{formatCurrency(item.price)}</td>
+                              <td className="py-3 px-4">{item.quantity}</td>
+                              <td className="py-3 px-4 font-medium">
+                                {formatCurrency(item.price * item.quantity)}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                      <tfoot className="bg-muted">
+                        <tr>
+                          <td colSpan={3} className="py-3 px-4 text-right font-semibold">
+                            Tổng cộng:
+                          </td>
+                          <td className="py-3 px-4 font-bold text-lg">
+                            {formatCurrency(selectedOrder.totalAmount)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>
+                    Đóng
+                  </Button>
+                  {selectedOrder.status === 'PENDING' && (
+                    <Button onClick={() => {
+                      handleStatusChange(selectedOrder.id, 'CONFIRMED');
+                      setIsDetailModalOpen(false);
+                    }}>
+                      Xác nhận đơn hàng
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
   );
 };

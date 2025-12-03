@@ -17,6 +17,25 @@ export function FeastCard({ feastSet, onViewDetails }: FeastCardProps) {
     }).format(price);
   };
 
+  const renderRating = () => {
+    if (feastSet.reviewCount === 0) {
+      return (
+        <>
+          <Star className="w-4 h-4 text-gray-300" />
+          <span className="font-medium">0.0</span>
+          <span className="text-muted-foreground text-sm">Chưa có đánh giá</span>
+        </>
+      );
+    }
+    return (
+      <>
+        <Star className="w-4 h-4 fill-secondary text-secondary" />
+        <span className="font-medium">{feastSet.rating}</span>
+        <span className="text-muted-foreground">({feastSet.reviewCount})</span>
+      </>
+    );
+  };
+
   return (
     <Card className="overflow-hidden hover:shadow-warm transition-smooth cursor-pointer group">
       <div className="relative">
@@ -31,9 +50,7 @@ export function FeastCard({ feastSet, onViewDetails }: FeastCardProps) {
           </Badge>
         )}
         <div className="absolute top-3 right-3 flex items-center gap-1 bg-background/90 px-2 py-1 rounded-full text-sm">
-          <Star className="w-4 h-4 fill-secondary text-secondary" />
-          <span className="font-medium">{feastSet.rating}</span>
-          <span className="text-muted-foreground">({feastSet.reviewCount})</span>
+          {renderRating()}
         </div>
       </div>
       
@@ -69,9 +86,9 @@ export function FeastCard({ feastSet, onViewDetails }: FeastCardProps) {
       </CardContent>
       
       <CardFooter className="p-4 pt-0">
-        <Button 
-          variant="hero" 
-          className="w-full" 
+        <Button
+          variant="hero"
+          className="w-full"
           onClick={() => onViewDetails(feastSet.id)}
         >
           Xem chi tiết

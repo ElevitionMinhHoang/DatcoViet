@@ -8,8 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChefHat, Star, Award, Clock, Menu, ArrowRight, Loader2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { menusAPI } from "@/services/api";
-import { Dish } from "@/types";
+import { menusAPI, feastSetsAPI, feedbackAPI } from "@/services/api";
+import { Dish, FeastSet } from "@/types";
 import heroFeastImg from "@/assets/hero-feast.jpg";
 
 const Index = () => {
@@ -18,6 +18,7 @@ const Index = () => {
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [dishes, setDishes] = useState<Dish[]>([]);
+  const [feastSets, setFeastSets] = useState<FeastSet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const categories = ["Tất cả", "Mâm Cỗ", "Món Ăn"];
@@ -26,10 +27,74 @@ const Index = () => {
     loadDishes();
   }, []);
 
+  // Listen for review submissions to refresh rating data
+  useEffect(() => {
+    const handleReviewSubmitted = () => {
+      loadDishes();
+    };
+    window.addEventListener('reviewSubmitted', handleReviewSubmitted);
+    return () => window.removeEventListener('reviewSubmitted', handleReviewSubmitted);
+  }, []);
+
   const loadDishes = async () => {
     try {
-      const dishesData = await menusAPI.getAllMenus();
+      // Fetch dishes and feast sets in parallel
+      const [dishesData, feastSetsData] = await Promise.all([
+        menusAPI.getAllMenus(),
+        feastSetsAPI.getAllFeastSets(),
+      ]);
       setDishes(dishesData);
+      setFeastSets(feastSetsData);
+
+      // Create a map of feast set ratings for quick lookup
+      const feastSetRatingMap: Record<string, { rating: number; reviewCount: number }> = {};
+      feastSetsData.forEach(fs => {
+        feastSetRatingMap[fs.id] = { rating: fs.rating, reviewCount: fs.reviewCount };
+      });
+
+      // For each dish, determine its rating
+      const dishesWithRatings = await Promise.all(
+        dishesData.map(async (dish) => {
+          // If dish is a feast set, use rating from feastSetRatingMap
+          if (feastSetRatingMap[dish.id]) {
+            return {
+              ...dish,
+              rating: feastSetRatingMap[dish.id].rating,
+              reviewCount: feastSetRatingMap[dish.id].reviewCount,
+            };
+          }
+          // Otherwise, fetch reviews for this individual dish
+          try {
+            const reviews = await feedbackAPI.getFeedbackByMenu(dish.id);
+            const reviewCount = reviews.length;
+            const rating = reviewCount > 0
+              ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+              : 0;
+            return {
+              ...dish,
+              rating: parseFloat(rating.toFixed(1)),
+              reviewCount,
+            };
+          } catch (error) {
+            console.error(`Failed to fetch reviews for dish ${dish.id}:`, error);
+            return {
+              ...dish,
+              rating: 0,
+              reviewCount: 0,
+            };
+          }
+        })
+      );
+      // Update dishes with ratings (we'll store in a separate state or extend dishes)
+      // For now, we can store in dishes state but we need to keep the original type.
+      // We'll create a new state `dishesWithRatings` or modify dishes to include rating.
+      // Since we already have `dishes` and `feastSets`, we can keep them separate.
+      // However, the UI uses `feastSets` for matching; we can update `feastSets` with the new ratings.
+      // Actually we already have feastSetsData with ratings, but we need to update `dishes` with ratings for individual dishes.
+      // Let's create a new state `dishesWithRatings` and use it in filteredDishes.
+      // For simplicity, we'll update `dishes` to include rating and reviewCount as optional fields.
+      // We'll extend Dish type locally.
+      setDishes(dishesWithRatings as Dish[]);
     } catch (error) {
       console.error('Failed to load dishes:', error);
       toast({
@@ -208,27 +273,32 @@ const Index = () => {
 
           {/* Feast Sets Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {filteredDishes.map((dish) => (
-              <FeastCard
-                key={dish.id}
-                feastSet={{
-                  id: dish.id,
-                  name: dish.name,
-                  description: dish.description,
-                  image: dish.image,
-                  price: dish.price,
-                  category: dish.category,
-                  dishes: [],
-                  servings: 4,
-                  isPopular: true,
-                  rating: 4.8,
-                  reviewCount: 124,
-                  isActive: dish.isAvailable,
-                  tags: [],
-                }}
-                onViewDetails={() => handleViewDetails(dish.id, dish.category)}
-              />
-            ))}
+            {filteredDishes.map((dish) => {
+              // Use rating and reviewCount from dish (already populated in loadDishes)
+              const rating = dish.rating ?? 0;
+              const reviewCount = dish.reviewCount ?? 0;
+              return (
+                <FeastCard
+                  key={dish.id}
+                  feastSet={{
+                    id: dish.id,
+                    name: dish.name,
+                    description: dish.description,
+                    image: dish.image,
+                    price: dish.price,
+                    category: dish.category,
+                    dishes: [],
+                    servings: 4,
+                    isPopular: true,
+                    rating,
+                    reviewCount,
+                    isActive: dish.isAvailable,
+                    tags: [],
+                  }}
+                  onViewDetails={() => handleViewDetails(dish.id, dish.category)}
+                />
+              );
+            })}
           </div>
 
           {filteredDishes.length === 0 && (

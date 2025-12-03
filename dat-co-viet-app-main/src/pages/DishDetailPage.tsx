@@ -102,6 +102,16 @@ export default function DishDetailPage() {
   };
 
   const handleAddToCart = () => {
+    if (!isLoggedIn) {
+      navigate("/auth");
+      toast({
+        title: "Vui lòng đăng nhập",
+        description: "Bạn cần đăng nhập để thêm món ăn vào giỏ hàng",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (dish) {
       addToCart(dish, quantity);
       toast({
@@ -132,21 +142,27 @@ export default function DishDetailPage() {
       return;
     }
     
-    // Add dish to cart first
+    // Redirect to checkout page with the current dish as direct order
     if (dish) {
-      addToCart(dish, quantity);
-      toast({
-        title: "Đã thêm vào giỏ hàng",
-        description: `${dish.name} (x${quantity}) đã được thêm vào giỏ hàng`,
+      navigate("/checkout", {
+        state: {
+          directOrder: {
+            dish,
+            quantity,
+            notes,
+            totalPrice: dish.price * quantity
+          }
+        }
       });
     }
-    
-    // Redirect to checkout page for logged in users
-    navigate("/checkout");
   };
 
   const totalPrice = dish.price * quantity;
 
+  const averageRating = dishReviews.length > 0
+    ? (dishReviews.reduce((sum, review) => sum + review.rating, 0) / dishReviews.length).toFixed(1)
+    : null;
+  const reviewCount = dishReviews.length;
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -168,9 +184,22 @@ export default function DishDetailPage() {
             className="w-full h-64 md:h-80 object-cover"
           />
           <div className="absolute top-4 right-4 flex items-center gap-1 bg-background/90 px-3 py-1 rounded-full">
-            <Star className="w-4 h-4 fill-secondary text-secondary" />
-            <span className="font-medium">4.5</span>
-            <span className="text-muted-foreground">({dishReviews.length} đánh giá)</span>
+            {reviewCount === 0 ? (
+              <>
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 text-gray-300" />
+                  ))}
+                </div>
+                <span className="text-muted-foreground text-sm">Chưa có đánh giá</span>
+              </>
+            ) : (
+              <>
+                <Star className="w-4 h-4 fill-secondary text-secondary" />
+                <span className="font-medium">{averageRating}</span>
+                <span className="text-muted-foreground">({reviewCount} đánh giá)</span>
+              </>
+            )}
           </div>
         </div>
 

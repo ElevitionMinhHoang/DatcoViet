@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Utensils, Search, Filter } from "lucide-react";
+import { Plus, Edit, Trash2, Utensils, Search, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,8 @@ const MenuManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredItems, setFilteredItems] = useState<MenuItem[]>([]);
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -36,11 +38,13 @@ const MenuManagementPage = () => {
     category: 'Món Ăn',
     price: 0,
     image: '',
+    imageFile: null as File | null,
     isAvailable: true,
     unit: 'phần',
     preparationTime: 30,
     isVegetarian: false,
     isSpicy: false,
+    isFeastSet: false,
     tags: [] as string[]
   });
 
@@ -83,6 +87,11 @@ const MenuManagementPage = () => {
 
     setFilteredItems(filtered);
   }, [searchTerm, categoryFilter, menuItems]);
+
+  // Reset current page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter]);
 
   const getStatusVariant = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -140,25 +149,67 @@ const MenuManagementPage = () => {
     }
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn file ảnh (PNG/JPG)');
+        return;
+      }
+      
+      // Check file size (2MB = 2 * 1024 * 1024 bytes)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Kích thước file phải nhỏ hơn 2MB');
+        return;
+      }
+      
+      // Create object URL for preview
+      const imageUrl = URL.createObjectURL(file);
+      setNewMenuItem(prev => ({
+        ...prev,
+        image: imageUrl,
+        imageFile: file
+      }));
+    }
+  };
+
+  const removeImage = () => {
+    if (newMenuItem.image) {
+      URL.revokeObjectURL(newMenuItem.image);
+    }
+    setNewMenuItem(prev => ({
+      ...prev,
+      image: '',
+      imageFile: null
+    }));
+  };
+
   const handleAddMenuItem = async () => {
     try {
+      // Determine category based on feast set checkbox
+      const finalCategory = newMenuItem.isFeastSet ? 'Mâm Cỗ' : newMenuItem.category;
+      
       // Create menu item data matching backend CreateMenuDto
       const menuData = {
         name: newMenuItem.name,
         price: newMenuItem.price,
-        category: newMenuItem.category,
+        category: finalCategory,
         image: newMenuItem.image || 'https://example.com/placeholder.jpg',
-        isActive: newMenuItem.isAvailable
+        isActive: newMenuItem.isAvailable,
+        imageFile: newMenuItem.imageFile || undefined
       };
 
+      console.log('Sending menu data:', menuData);
       const createdItem = await api.menus.createMenuItem(menuData);
+      console.log('Backend response:', createdItem);
       
       // Add the new item to the list
       const newItem: MenuItem = {
         id: createdItem.id.toString(),
         name: createdItem.name,
         description: newMenuItem.description || `${createdItem.name} - Món ăn truyền thống Việt Nam`,
-        category: createdItem.category,
+        category: finalCategory,
         price: createdItem.price,
         isAvailable: createdItem.isActive,
         image: createdItem.image,
@@ -179,15 +230,18 @@ const MenuManagementPage = () => {
         category: 'Món Ăn',
         price: 0,
         image: '',
+        imageFile: null,
         isAvailable: true,
         unit: 'phần',
         preparationTime: 30,
         isVegetarian: false,
         isSpicy: false,
+        isFeastSet: false,
         tags: []
       });
     } catch (error) {
       console.error('Failed to add menu item:', error);
+      console.error('Error details:', error);
       alert('Thêm món mới thất bại. Vui lòng thử lại.');
     }
   };
@@ -236,6 +290,24 @@ const MenuManagementPage = () => {
     );
   }
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, filteredItems.length);
+  const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-8">
@@ -258,10 +330,6 @@ const MenuManagementPage = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Lọc
-          </Button>
         </div>
         
         <div className="flex gap-2 mt-4 overflow-x-auto">
@@ -306,7 +374,7 @@ const MenuManagementPage = () => {
                   </td>
                 </tr>
               ) : (
-                filteredItems.map((item) => (
+                paginatedItems.map((item) => (
                   <tr key={item.id} className="border-b hover:bg-muted/50">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
@@ -376,11 +444,25 @@ const MenuManagementPage = () => {
         
         <div className="mt-6 flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Hiển thị {filteredItems.length} trên {menuItems.length} món ăn
+            Hiển thị {filteredItems.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredItems.length} món ăn
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">Trước</Button>
-            <Button variant="outline" size="sm">Sau</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrevPage}
+              disabled={currentPage === 1}
+            >
+              Trước
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages || totalPages === 0}
+            >
+              Sau
+            </Button>
           </div>
         </div>
       </div>
@@ -388,8 +470,17 @@ const MenuManagementPage = () => {
       {/* Add Menu Item Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background rounded-lg p-6 w-full max-w-md mx-4">
-            <h2 className="text-xl font-bold mb-4">Thêm món ăn mới</h2>
+          <div className="bg-background rounded-lg p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">Thêm món ăn mới</h2>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             
             <div className="space-y-4">
               <div>
@@ -413,18 +504,35 @@ const MenuManagementPage = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium">Loại món ăn *</label>
-                <select
-                  value={newMenuItem.category}
-                  onChange={(e) => setNewMenuItem(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full p-2 border rounded-md mt-1"
-                >
-                  <option value="Món Ăn">Món Ăn</option>
-                  <option value="Món Chay">Món Chay</option>
-                  <option value="Món Nước">Món Nước</option>
-                  <option value="Món Tráng Miệng">Món Tráng Miệng</option>
-                  <option value="Đồ Uống">Đồ Uống</option>
-                </select>
+                <label className="text-sm font-medium">Phân loại món ăn *</label>
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newMenuItem.isFeastSet}
+                      onChange={(e) => setNewMenuItem(prev => ({
+                        ...prev,
+                        isFeastSet: e.target.checked,
+                        category: e.target.checked ? 'Mâm Cỗ' : 'Món Ăn'
+                      }))}
+                      className="w-4 h-4"
+                    />
+                    <label className="text-sm">Mâm cỗ</label>
+                  </div>
+                  {!newMenuItem.isFeastSet && (
+                    <select
+                      value={newMenuItem.category}
+                      onChange={(e) => setNewMenuItem(prev => ({ ...prev, category: e.target.value }))}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="Món Ăn">Món ăn lẻ</option>
+                      <option value="Món Chay">Món Chay</option>
+                      <option value="Món Nước">Món Nước</option>
+                      <option value="Món Tráng Miệng">Món Tráng Miệng</option>
+                      <option value="Đồ Uống">Đồ Uống</option>
+                    </select>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -439,13 +547,44 @@ const MenuManagementPage = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium">URL hình ảnh</label>
-                <Input
-                  value={newMenuItem.image}
-                  onChange={(e) => setNewMenuItem(prev => ({ ...prev, image: e.target.value }))}
-                  placeholder="https://example.com/image.jpg"
-                  className="mt-1"
-                />
+                <label className="text-sm font-medium">Hình ảnh sản phẩm</label>
+                <div className="mt-2">
+                  {newMenuItem.image ? (
+                    <div className="relative">
+                      <img
+                        src={newMenuItem.image}
+                        alt="Preview"
+                        className="w-32 h-32 object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 mb-2">Tải lên hình ảnh sản phẩm</p>
+                      <p className="text-xs text-gray-500 mb-4">PNG, JPG (Tối đa 2MB)</p>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="image-upload"
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="inline-block bg-blue-600 text-white px-4 py-2 rounded text-sm cursor-pointer hover:bg-blue-700"
+                      >
+                        Chọn ảnh
+                      </label>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-4">
@@ -502,8 +641,20 @@ const MenuManagementPage = () => {
       {/* Edit Menu Item Modal */}
       {showEditModal && editingItem && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background rounded-lg p-6 w-full max-w-md mx-4">
-            <h2 className="text-xl font-bold mb-4">Chỉnh sửa món ăn</h2>
+          <div className="bg-background rounded-lg p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">Chỉnh sửa món ăn</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingItem(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             
             <div className="space-y-4">
               <div>

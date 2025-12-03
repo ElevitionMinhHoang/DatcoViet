@@ -58,33 +58,33 @@ export function ChatWindow({
   }
 
   return (
-    <Card className={cn("flex flex-col h-[500px]", className)}>
+    <Card className={cn("flex flex-col h-[600px] max-h-[80vh]", className)}>
       {showHeader && (
         <CardHeader className="border-b p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Avatar className="w-8 h-8">
                 <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                  {getInitials(otherParticipant?.userName || 'U')}
+                  HH
                 </AvatarFallback>
               </Avatar>
               
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">
-                    {otherParticipant?.userName || 'Người dùng'}
+                    {user?.role === 'admin' || user?.role === 'staff' || user?.role === 'ADMIN' || user?.role === 'CSKH' || user?.role === 'MANAGER'
+                      ? conversation.participants.find(p => p.userRole === 'customer')?.userName || 'Người dùng'
+                      : 'Hỗ trợ Hoa nắng'
+                    }
                   </span>
-                  {otherParticipant?.userRole === 'admin' && (
-                    <Badge variant="secondary" className="text-xs">
-                      Admin
+                  {(user?.role !== 'admin' && user?.role !== 'staff' && user?.role !== 'ADMIN' && user?.role !== 'CSKH' && user?.role !== 'MANAGER') && (
+                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                      Hỗ trợ
                     </Badge>
                   )}
                 </div>
                 
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <MessageSquare className="w-3 h-3" />
-                  <span>Đang trực tuyến</span>
-                </div>
+                {/* Status line removed */}
               </div>
             </div>
             
@@ -108,9 +108,9 @@ export function ChatWindow({
         </CardHeader>
       )}
       
-      <CardContent className="flex-1 p-0 flex flex-col">
-        <MessageList messages={conversationMessages} />
-        <MessageInput 
+      <CardContent className="flex-1 p-0 flex flex-col min-h-0">
+        <MessageList messages={conversationMessages} className="flex-1" />
+        <MessageInput
           onSendMessage={handleSendMessage}
           placeholder="Nhập tin nhắn..."
         />
@@ -141,15 +141,21 @@ export function CompactChatWindow({ conversation, onSelect, isActive }: CompactC
     >
       <div className="flex items-center gap-3 w-full">
         <Avatar className="w-10 h-10">
-          <AvatarFallback className="text-xs">
-            {getInitials(otherParticipant?.userName)}
+          <AvatarFallback className="text-black text-xs">
+            {user?.role === 'admin' || user?.role === 'staff' || user?.role === 'ADMIN' || user?.role === 'CSKH' || user?.role === 'MANAGER'
+              ? conversation.participants.find(p => p.userRole === 'customer')?.userName?.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2) || 'HH'
+              : 'HH'
+            }
           </AvatarFallback>
         </Avatar>
         
         <div className="flex-1 text-left min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-medium truncate">
-              {otherParticipant?.userName}
+              {user?.role === 'admin' || user?.role === 'staff' || user?.role === 'ADMIN' || user?.role === 'CSKH' || user?.role === 'MANAGER'
+                ? conversation.participants.find(p => p.userRole === 'customer')?.userName || 'Người dùng'
+                : 'Hỗ trợ Hoa nắng'
+              }
             </span>
             {conversation.unreadCount > 0 && (
               <Badge variant="destructive" className="ml-auto text-xs">
@@ -159,25 +165,8 @@ export function CompactChatWindow({ conversation, onSelect, isActive }: CompactC
           </div>
           
           <p className="text-xs text-muted-foreground truncate">
-            {conversation.lastMessage?.content || 'Chưa có tin nhắn'}
+            {conversation.lastMessage?.content || ''}
           </p>
-          
-          <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
-            <span>
-              {conversation.lastMessage 
-                ? new Date(conversation.lastMessage.createdAt).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })
-                : new Date(conversation.createdAt).toLocaleDateString('vi-VN')
-              }
-            </span>
-            {otherParticipant?.userRole === 'admin' && (
-              <Badge variant="outline" className="text-xs">
-                Admin
-              </Badge>
-            )}
-          </div>
         </div>
       </div>
     </Button>

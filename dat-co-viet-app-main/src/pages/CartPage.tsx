@@ -2,17 +2,48 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
-import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { Link, useNavigate } from "react-router-dom";
 
 const CartPage = () => {
   const { cartItems, updateQuantity, removeFromCart, totalPrice } = useCart();
+  const { isLoggedIn } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   const shipping = 20000; // Example shipping cost
   const total = totalPrice + shipping;
 
+  const handleCheckout = () => {
+    if (!isLoggedIn) {
+      toast({
+        title: "Vui lòng đăng nhập",
+        description: "Bạn cần đăng nhập để thanh toán",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+    navigate("/checkout");
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Giỏ hàng của bạn</h1>
+        {!isLoggedIn && cartItems.length > 0 && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-yellow-800">Bạn cần đăng nhập để thanh toán</p>
+                <p className="text-sm text-yellow-700">Vui lòng đăng nhập hoặc đăng ký để hoàn tất đơn hàng.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+                Đăng nhập
+              </Button>
+            </div>
+          </div>
+        )}
         {cartItems.length === 0 ? (
           <div className="text-center">
             <p className="text-xl mb-4">Giỏ hàng của bạn đang trống.</p>
@@ -94,8 +125,8 @@ const CartPage = () => {
                   <span>{total.toLocaleString("vi-VN")}₫</span>
                 </div>
               </div>
-              <Button asChild className="w-full mt-6">
-                <Link to="/checkout">Tiến hành thanh toán</Link>
+              <Button onClick={handleCheckout} className="w-full mt-6">
+                Tiến hành thanh toán
               </Button>
             </div>
           </div>
