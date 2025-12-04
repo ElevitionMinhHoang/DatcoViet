@@ -84,9 +84,10 @@ const ProfilePage = () => {
 
   // Filter orders for different tabs
   const completedOrders = orderHistory.filter(order => order.status === 'COMPLETED');
-  const activeOrders = orderHistory.filter(order =>
-    order.status !== 'COMPLETED' && order.status !== 'CANCELLED'
-  );
+ const activeOrders = orderHistory.filter(order =>
+  order.status !== 'COMPLETED'
+);
+
 
 
   const handleLogout = () => {
