@@ -100,6 +100,15 @@ export default function AuthPage() {
       });
       return;
     }
+    const nameRegex = /^[\p{L}\s]+$/u;
+    if (!nameRegex.test(registerForm.name.trim())) {
+      toast({
+        title: "Lỗi đăng ký",
+        description: "Họ và tên không hợp lệ — không được chứa số hoặc ký tự đặc biệt",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (registerForm.password !== registerForm.confirmPassword) {
       toast({
@@ -118,12 +127,12 @@ export default function AuthPage() {
       });
       return;
     }
-
-    const phoneRegex = /^[0-9]{10,11}$/;
+    
+    const phoneRegex = /^0\d{9,10}$/;
     if (!phoneRegex.test(registerForm.phone)) {
       toast({
         title: "Lỗi đăng ký",
-        description: "Số điện thoại không hợp lệ",
+        description: "Số điện thoại không hợp lệ — phải bắt đầu bằng 0 và gồm 10 hoặc 11 chữ số",
         variant: "destructive",
       });
       return;
@@ -149,7 +158,7 @@ export default function AuthPage() {
           } else {
             toast({
               title: "Đăng ký thành công!",
-              description: "Tài khoản của bạn đã được tạo. Vui lòng kiểm tra email để xác thực tài khoản.",
+              description: "Tài khoản của bạn đã được tạo.",
             });
             navigate('/');
           }
@@ -157,7 +166,7 @@ export default function AuthPage() {
           // Fallback to home if user data not found
           toast({
             title: "Đăng ký thành công!",
-            description: "Tài khoản của bạn đã được tạo. Vui lòng kiểm tra email để xác thực tài khoản.",
+            description: "Tài khoản của bạn đã được tạo.",
           });
           navigate('/');
         }
@@ -320,7 +329,7 @@ export default function AuthPage() {
                   <Label htmlFor="register-phone">Số điện thoại *</Label>
                   <Input
                     id="register-phone"
-                    placeholder="Nhập số điện thoại (10-11 chữ số)"
+                    placeholder="Nhập số điện thoại (10 chữ số)"
                     value={registerForm.phone}
                     onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
                     required
